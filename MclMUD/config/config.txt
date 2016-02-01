@@ -1,9 +1,0 @@
-#--- Saved on Mon Feb 01 15:05:34 MST 2016 ---
-#Mon Feb 01 15:05:34 MST 2016
-YLOC=50
-WIDTH=739
-XLOC=65
-Diskworld=diskworld.starturtle.net\:4242
-MUME=mume.org\:4242
-HEIGHT=713
-MUDS=MUME\:Diskworld
