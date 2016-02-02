@@ -3,23 +3,28 @@ package com.mcltech.connection;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.SocketException;
 import java.util.logging.Level;
 
 import org.apache.commons.net.telnet.EchoOptionHandler;
 import org.apache.commons.net.telnet.InvalidTelnetOptionException;
 import org.apache.commons.net.telnet.SuppressGAOptionHandler;
 import org.apache.commons.net.telnet.TelnetClient;
-import org.apache.commons.net.telnet.TelnetInputListener;
-import org.apache.commons.net.telnet.TelnetNotificationHandler;
 import org.apache.commons.net.telnet.TerminalTypeOptionHandler;
 import org.eclipse.swt.graphics.Color;
 
 import com.mcltech.base.MudLogger;
 
-public class Controller implements Runnable, TelnetNotificationHandler, TelnetInputListener
+/**
+ * Handles the telnet connection. Use this by calling init to set up the terminal options
+ * and then calling "connect". It will start a reader thread that passes information to
+ * the AnsiParser and then to the screen. Send commands through "write". To stop it,
+ * just use "disconnect".
+ * @author andymac
+ *
+ */
+public class Controller implements Runnable //, TelnetNotificationHandler, TelnetInputListener
 {
-   private static final MudLogger log = MudLogger.get();
+   private static final MudLogger log = MudLogger.getInstance();
    private TelnetClient client;
    private MudFrame frame;
    private boolean isConnected;
@@ -32,6 +37,10 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
       this.frame = frame;
    }
 
+   /**
+    * Set up the terminal
+    * @return
+    */
    public boolean init()
    {
       TerminalTypeOptionHandler ttopt = new TerminalTypeOptionHandler("VT100", false, false, false, false);
@@ -58,17 +67,26 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
          return false;
       }
 
-      client.registerNotifHandler(this);
-      client.registerInputListener(this);
+//      client.registerNotifHandler(this);
+//      client.registerInputListener(this);
 
       return true;
    }
 
+   /**
+    * Check if it's connected
+    * @return is currently connected to a host
+    */
    public boolean isConnected()
    {
       return isConnected;
    }
 
+   /**
+    * Write a string to the terminal and send it if connected.
+    * @param line
+    * @return false if not connected or error sending
+    */
    public boolean write(String line)
    {
       if (!isConnected)
@@ -84,18 +102,27 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
       {
          log.add(Level.SEVERE, "Command not sent {" + line + "}", e);
          System.out.println("Command not sent {" + line + "}");
-         isConnected = false;
+         frame.writeToTextBox("\n\n***Could not send command! Disconnecting. Error is logged.***\n\n", null);
+         disconnect(); // clean up
          return false;
       }
       return true;
    }
 
+   /**
+    * Connect to a specific host / port and start the reader thread.
+    * @param hostname
+    * @param port
+    * @return
+    */
    public boolean connect(String hostname, int port)
    {
       if (isConnected)
       {
-         System.out
-               .println("Could not connect to {" + hostname + ":" + port + "}. Connection already in use.");
+         System.out.println(
+               "Could not connect to {" + hostname + ":" + port + "}. A connection is already in use.");
+         frame.writeToTextBox(
+               "\n\n***Could not connect to {" + hostname + ":" + port + "}. A connection is already in use.***\n\n", null);
          return false;
       }
 
@@ -103,16 +130,12 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
       {
          client.connect(hostname, port);
       }
-      catch (SocketException e)
-      {
-         log.add(Level.SEVERE, "Error connecting to {" + hostname + ":" + port + "}", e);
-         System.out.println("Could not connect to {" + hostname + ":" + port + "}");
-         return false;
-      }
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Error connecting to {" + hostname + ":" + port + "}", e);
          System.out.println("Could not connect to {" + hostname + ":" + port + "}");
+         frame.writeToTextBox(
+               "\n\n***Could not connect to {" + hostname + ":" + port + "}. Error is logged.***\n\n", null);
          return false;
       }
 
@@ -123,6 +146,10 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
       return true;
    }
 
+   /**
+    * Disconnect.
+    * @return true if disconnected or disconnecting succeeds
+    */
    public boolean disconnect()
    {
       if (!isConnected)
@@ -134,12 +161,13 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
       {
          client.disconnect();
          log.add(Level.INFO, "Disconnect.");
-         frame.writeToTextBox("Disconnected.", null);
+         frame.writeToTextBox("\nDisconnected.\n", null);
       }
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Could not disconnect: ", e);
          System.out.println("Could not disconnect.");
+         frame.writeToTextBox("\n\n***Could not disconnect. Error is logged.***\n\n", null);
          isConnected = false;
          return false;
       }
@@ -147,6 +175,10 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
       return true;
    }
 
+   /**
+    * Reader thread. Read the input stream. Disconnect if the socket is closed. Pass
+    * information to the AnsiParser
+    */
    @Override
    public void run()
    {
@@ -157,6 +189,7 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
 
          do
          {
+            // stream is finished sending (for now), print to screen
             if (in.available() == 0)
             {
                AnsiParser.flush();
@@ -167,6 +200,7 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
                AnsiParser.parseBytes(buff, ret_read);
                // System.out.print(new String(buff, 0, ret_read, "cp1252")); //IBM850,cp1252);
             }
+            // read zero bytes. Flush the output to the screen.
             else if (ret_read == 0)
             {
                AnsiParser.flush();
@@ -182,20 +216,21 @@ public class Controller implements Runnable, TelnetNotificationHandler, TelnetIn
       {
          log.add(Level.SEVERE, "Error reading connection: ", e);
          System.out.println("Could no longer read connection.");
-         isConnected = false;
+         System.out.println("\n\n***Could no longer read connection. Disconnecting. Error is logged.***\n\n");
+         disconnect();
       }
    }
 
-   @Override
-   public void receivedNegotiation(int negotiation_code, int option_code)
-   {
-      // System.out.println("Neg: " + negotiation_code + " Opt: " + option_code);
-   }
-
-   @Override
-   public void telnetInputAvailable()
-   {
-      // System.out.println("Input available!");
-   }
+//   @Override
+//   public void receivedNegotiation(int negotiation_code, int option_code)
+//   {
+//      // System.out.println("Neg: " + negotiation_code + " Opt: " + option_code);
+//   }
+//
+//   @Override
+//   public void telnetInputAvailable()
+//   {
+//      // System.out.println("Input available!");
+//   }
 
 }

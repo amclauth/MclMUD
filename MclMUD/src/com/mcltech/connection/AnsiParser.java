@@ -13,9 +13,16 @@ import org.eclipse.swt.widgets.Display;
 import com.mcltech.ai.AIListener;
 import com.mcltech.base.MudLogger;
 
+/**
+ * Parse the ansi input and escape sequences into string and style ranges. This is
+ * not a thread safe class, but the input is serialized by the controller's read, so
+ * should be quite safe for this application.
+ * @author andymac
+ *
+ */
 public class AnsiParser
 {
-   private static final MudLogger log = MudLogger.get();
+   private static final MudLogger log = MudLogger.getInstance();
    private static Color[] colors = new Color[10];
    private static List<AIListener> listeners;
 
@@ -39,8 +46,14 @@ public class AnsiParser
 
    static String lineBuffer;
 
+   /**
+    * Initialize the parser
+    * @param display
+    * @param mudframe
+    */
    public static void init(Display display, MudFrame mudframe)
    {
+      // set up the system colors
       colors[0] = display.getSystemColor(SWT.COLOR_BLACK);
       colors[1] = display.getSystemColor(SWT.COLOR_RED);
       colors[2] = display.getSystemColor(SWT.COLOR_GREEN);
@@ -49,6 +62,7 @@ public class AnsiParser
       colors[5] = display.getSystemColor(SWT.COLOR_MAGENTA);
       colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
       colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
+      
       listeners = new ArrayList<>();
       continuedSequences = new ArrayList<>();
       inEscape = false;
@@ -61,11 +75,19 @@ public class AnsiParser
       frame = mudframe;
    }
 
+   /**
+    * Add whatever listeners care about input text
+    * @param listener
+    */
    public static void registerListener(AIListener listener)
    {
       listeners.add(listener);
    }
 
+   /**
+    * Remove a listener
+    * @param listener
+    */
    public static void deRegisterListener(AIListener listener)
    {
       listeners.remove(listener);
@@ -98,8 +120,10 @@ public class AnsiParser
       for (int ii = 0; ii < bytes.length && ii < len; ii++)
       {
          byte b = bytes[ii];
+         // on a newline, add to the string and put it onto the output text box
          if (b == newline || b == carriage || b == formfeed)
          {
+            // ignore the double \r\n (slightly sloppy way to do it that skips all double returns)
             if (isCarriage)
             {
                isCarriage = false;
@@ -119,20 +143,18 @@ public class AnsiParser
             processString();
             continue;
          }
+         
          isCarriage = false;
-         if (inEscape && b != ctr)
+         if (inEscape)
          {
-            // skip this character, then
-            inEscape = false;
-            continue;
-         }
-         if (b == esc)
-         {
-            inEscape = true;
-            continue;
-         }
-         else if (inEscape && b == ctr)
-         {
+            // check for escape commands that we don't parse
+            if (b != ctr)
+            {
+               inEscape = false;
+               continue;
+            }
+
+            // otherwise  set the control bit
             inEscape = false;
             inControl = true;
             sequence = 0;
@@ -140,6 +162,7 @@ public class AnsiParser
          }
          else if (inControl)
          {
+            // on a separator, parse the existing sequence command
             if (b == sep1 || b == sep2 || b == end)
             {
                setStyle(sequence, lbIdx);
@@ -150,11 +173,16 @@ public class AnsiParser
                }
                continue;
             }
+            
+            // if we can't figure out this sequence, continue to ignore it.
             if (sequence < 0)
             {
                continue;
             }
+            
+            // get the next integer bit
             int n = convert(b);
+            // ignore non integers because we're not parsing those currently
             if (n < 0)
             {
                sequence = -1;
@@ -173,11 +201,20 @@ public class AnsiParser
          }
          else
          {
+            // check for escapes
+            if (b == esc)
+            {
+               inEscape = true;
+               continue;
+            }
+            
+            // or log it to the out bytes and set the index for the full string 
             out[idx++] = b;
             lbIdx++;
          }
       }
 
+      // add to the lineBuffer when done parsing these bits
       try
       {
          lineBuffer += (new String(out, startIdx, idx - startIdx, "cp1252"));
@@ -190,29 +227,45 @@ public class AnsiParser
 
    }
 
+   /**
+    * Process the current string
+    */
    public static void flush()
    {
       processString();
    }
 
+   /**
+    * Take the linebuffer and print it, with styles, to the output text
+    */
    private static void processString()
    {
-      for (StyleRange r : ranges)
+      if (lineBuffer.length() > 0)
       {
-         if (r.length == -1)
+         // change the length of each range that hasn't been terminated
+         for (StyleRange r : ranges)
          {
-            // TODO ... these should continue across the lines
-            r.length = lineBuffer.length() - r.start - 1;
+            if (r.length == -1)
+            {
+               // TODO ... these should continue across the lines
+               r.length = lineBuffer.length() - r.start - 1;
+            }
          }
+   
+         // send the string to all listeners
+         for (AIListener listener : listeners)
+         {
+            listener.process(ranges, lineBuffer);
+         }
+   
+         // and write
+         frame.writeToTextBox(lineBuffer, ranges);
       }
 
-      for (AIListener listener : listeners)
-      {
-         listener.process(ranges, lineBuffer);
-      }
-
-      frame.writeToTextBox(lineBuffer, ranges);
-
+      // reset the line buffer and the ranges. We have the option to continue with
+      // the "continuedSequnces" here, but I'm currently opting to end all sequences
+      // with line termination (there are times where an escape sequence is missed, 
+      // and then the entire screen ends up staying a color we don't want)
       lineBuffer = "";
       lbIdx = 0;
       ranges.clear();
@@ -227,8 +280,14 @@ public class AnsiParser
     */
    private static void setStyle(int sequence, int idx)
    {
-      if (sequence == 0)
+      // ignore bad sequences
+      if (sequence < 0)
       {
+         return;
+      }
+      else if (sequence == 0)
+      {
+         // set the length for all non-terminated sequences and return
          continuedSequences.clear();
          for (StyleRange range : ranges)
          {
@@ -242,8 +301,9 @@ public class AnsiParser
 
       continuedSequences.add(Integer.valueOf(sequence));
 
+      // Create the new style range for this sequence
       StyleRange range = new StyleRange();
-      range.start = idx;
+      range.start = idx; // relative to the string, not the bytes or the screen
       range.length = -1;
 
       switch (sequence)

@@ -1,6 +1,7 @@
 package com.mcltech.connection;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
@@ -23,11 +24,17 @@ import org.eclipse.swt.widgets.Text;
 
 import com.mcltech.base.MudLogger;
 
+/**
+ * An SWT implementation that has a menu, output screen, and input text box
+ * 
+ * @author andymac
+ *
+ */
 public class MudFrame
 {
    Shell shell;
    private Display display;
-   private static final MudLogger log = MudLogger.get();
+   private static final MudLogger log = MudLogger.getInstance();
    StyledText outputText;
    Text inputText;
    Controller controller;
@@ -37,6 +44,14 @@ public class MudFrame
 
    }
 
+   /**
+    * Print a line of text to the output screen. This will accept a string input and is formatted by the style
+    * ranges. It will also clear 10 lines of the output screen at a time if over 1000 lines of text are in the
+    * screen to keep from overflowing any buffers.
+    * 
+    * @param line
+    * @param ranges (start should be set with respect to the string itself)
+    */
    public void writeToTextBox(String line, List<StyleRange> ranges)
    {
       List<StyleRange> rangeCopy = new ArrayList<>();
@@ -77,6 +92,9 @@ public class MudFrame
       });
    }
 
+   /**
+    * Create the various elements and start initialize the controller and AnsiParser
+    */
    public void init()
    {
       display = new Display();
@@ -94,6 +112,7 @@ public class MudFrame
       controller = new Controller(this);
       controller.init();
 
+      // try to get the location and size from the Configger
       int xloc = 0;
       int yloc = 0;
       int height = 600;
@@ -107,12 +126,13 @@ public class MudFrame
       }
       catch (NumberFormatException e)
       {
-         log.add(Level.WARNING,"Couldn't get Configger values: ", e);
+         log.add(Level.WARNING, "Couldn't get Configger values: ", e);
       }
 
       shell.setLocation(xloc, yloc);
       shell.setSize(width, height);
 
+      // Save resize information to the config file
       shell.addListener(SWT.Resize, new Listener()
       {
          @Override
@@ -123,6 +143,7 @@ public class MudFrame
          }
       });
 
+      // Save location information to the config file
       shell.addListener(SWT.Move, new Listener()
       {
          @Override
@@ -150,6 +171,9 @@ public class MudFrame
       display.dispose();
    }
 
+   /**
+    * Screen that holds the output from the terminal
+    */
    private void createOutputScreen()
    {
       GridData gridData = new GridData();
@@ -163,6 +187,7 @@ public class MudFrame
       outputText.setFont(mono);
       outputText.setBackground(display.getSystemColor(SWT.COLOR_BLACK));
       outputText.setForeground(display.getSystemColor(SWT.COLOR_WHITE));
+      // scroll the screen to the bottom on any new input
       outputText.addListener(SWT.Modify, new Listener()
       {
          @Override
@@ -171,6 +196,8 @@ public class MudFrame
             outputText.setTopIndex(outputText.getLineCount() - 1);
          }
       });
+      // move the focus to the input box if this screen is clicked (this screen will
+      // often be clicked to give the app focus)
       outputText.addListener(SWT.MouseUp, new Listener()
       {
          @Override
@@ -182,6 +209,11 @@ public class MudFrame
 
    }
 
+   /**
+    * Input text box for sending commands to the terminal
+    * 
+    * TODO - maybe add a limited stack to track commands?
+    */
    private void createInputScreen()
    {
       GridData gridData = new GridData();
@@ -192,6 +224,7 @@ public class MudFrame
       gridData.heightHint = 50;
       inputText = new Text(shell, SWT.SINGLE | SWT.BORDER | SWT.WRAP);
       inputText.setLayoutData(gridData);
+      // handle the user pressing enter as the way to send commands
       inputText.addListener(SWT.Traverse, new Listener()
       {
          @Override
@@ -204,22 +237,29 @@ public class MudFrame
                   addConnection(inputText.getText());
                }
                controller.write(inputText.getText() + "\n");
-               inputText.setText("");
+               // keep the text there and selected, so just pressing enter
+               // repeats the last command
+               inputText.selectAll();
             }
          }
       });
    }
 
+   /**
+    * Create the menu for connecting and disconnecting
+    */
    private void createMenu()
    {
       Menu menuBar = new Menu(shell, SWT.BAR);
 
+      // connect main item
       MenuItem connectionMenuItem = new MenuItem(menuBar, SWT.CASCADE);
       connectionMenuItem.setText("&Connect");
 
       Menu connectionMenu = new Menu(shell, SWT.DROP_DOWN);
       connectionMenuItem.setMenu(connectionMenu);
 
+      // add each mud in the config file
       List<String> muds = new ArrayList<>();
       for (String mud : Configger.getProperty("MUDS", "").split(":"))
       {
@@ -234,10 +274,13 @@ public class MudFrame
          if (details.length != 2)
          {
             log.add(Level.WARNING, "Got bad data for mud: " + mud);
+            writeToTextBox("Couldn't use this connection. Information is in bad format in config: {"
+                  + Arrays.toString(details) + "}", null);
             continue;
          }
          MenuItem mumeItem = new MenuItem(connectionMenu, SWT.PUSH);
          mumeItem.setText("&" + mud);
+         // connect when clicked
          mumeItem.addSelectionListener(new SelectionAdapter()
          {
             @Override
@@ -248,6 +291,7 @@ public class MudFrame
          });
       }
 
+      // disconnect button
       MenuItem disconnectMenuItem = new MenuItem(menuBar, SWT.CASCADE);
       disconnectMenuItem.setText("&Disconnect");
       disconnectMenuItem.addSelectionListener(new SelectionAdapter()
@@ -262,6 +306,10 @@ public class MudFrame
       shell.setMenuBar(menuBar);
    }
 
+   /**
+    * Add a connection when the user is disconnected and enters a name:host:port command
+    * @param line
+    */
    void addConnection(String line)
    {
       int idx1 = line.indexOf(':');
@@ -280,7 +328,7 @@ public class MudFrame
          {
             writeToTextBox("\nPort wasn't a number. Got name{" + name + "} address{" + con + "} port{"
                   + pString + "}\n", null);
-            log.add(Level.WARNING,"Couldn't parse number: ", e);
+            log.add(Level.WARNING, "Couldn't parse number: ", e);
             return;
          }
 
@@ -316,10 +364,5 @@ public class MudFrame
          writeToTextBox("\nIf entering a connection, need that in name:address:port style.\n", null);
          return;
       }
-   }
-
-   public StyledText getText()
-   {
-      return outputText;
    }
 }

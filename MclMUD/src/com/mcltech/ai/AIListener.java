@@ -15,7 +15,7 @@ public abstract class AIListener
    // formatter needs to be serial. Pass writes to this first for commands and aliases. Triggers / scripts
    // should be handled in a different thread
 
-   private static final MudLogger log = MudLogger.get();
+   private static final MudLogger log = MudLogger.getInstance();
 
    protected LinkedBlockingQueue<String> lineQueue;
    protected boolean listening = false;

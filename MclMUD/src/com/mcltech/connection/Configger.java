@@ -8,11 +8,18 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import com.mcltech.base.MudLogger;
+
+/**
+ * A static / synchronized class to read and write information from a config file on the fly. Overkill
+ * here, but I had most of it from an earlier project.
+ * @author amclauthlin
+ *
+ */
 public class Configger
 {
-   private static final Logger log = Logger.getLogger(Configger.class.getName());
+   private static final MudLogger log = MudLogger.getInstance();
    private final static String propFileName = "config/config.txt";
    
    private static ConcurrentHashMap<String,String> properties = new ConcurrentHashMap<>();
@@ -41,13 +48,17 @@ public class Configger
    public static void setProperty(String key, String val)
    {
       properties.put(key,val);
-      log.log(Level.FINE, "Saving " + key + " => " + val + " to config");
+      log.add(Level.FINE, "Saving " + key + " => " + val + " to config");
       sync();
    }
    
-   public static synchronized boolean sync()
+   /**
+    * Sync values between the file and the current system information
+    * @return
+    */
+   private static synchronized boolean sync()
    {
-      log.log(Level.FINE, "Syncing config file");
+      log.add(Level.FINE, "Syncing config file");
       Properties propTmp = new Properties();
       
       boolean loaded = false;
@@ -59,11 +70,11 @@ public class Configger
       }
       catch (FileNotFoundException e)
       {
-         log.log(Level.INFO, "ERROR: Could not find file: " + propFileName + " to read. Will create a new one.", e);
+         log.add(Level.INFO, "ERROR: Could not find file: " + propFileName + " to read. Will create a new one.", e);
       }
       catch (IOException e)
       {
-         log.log(Level.SEVERE, "ERROR: Could not read file: " + propFileName, e);
+         log.add(Level.SEVERE, "ERROR: Could not read file: " + propFileName, e);
          return false;
       }
       
@@ -93,7 +104,7 @@ public class Configger
       
       if (isDirty)
       {
-         log.log(Level.FINE, "Saving config file.");
+         log.add(Level.FINE, "Saving config file.");
          try (FileOutputStream out = new FileOutputStream(propFileName))
          {
             Date date = new Date();
@@ -102,12 +113,12 @@ public class Configger
          }
          catch (FileNotFoundException e)
          {
-            log.log(Level.SEVERE, "ERROR: Could not find file to write: " + propFileName, e);
+            log.add(Level.SEVERE, "ERROR: Could not find file to write: " + propFileName, e);
             return false;
          }
          catch (IOException e)
          {
-            log.log(Level.SEVERE, "ERROR: Could not write to file: " + propFileName, e);
+            log.add(Level.SEVERE, "ERROR: Could not write to file: " + propFileName, e);
             return false;
          }
          
