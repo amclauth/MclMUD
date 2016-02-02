@@ -10,11 +10,10 @@ import org.eclipse.swt.custom.StyleRange;
 import com.mcltech.base.MudLogger;
 import com.mcltech.connection.AnsiParser;
 
-public abstract class AIListener
+public abstract class AIListener implements Runnable
 {
    // formatter needs to be serial. Pass writes to this first for commands and aliases. Triggers / scripts
    // should be handled in a different thread
-
    private static final MudLogger log = MudLogger.getInstance();
 
    protected LinkedBlockingQueue<String> lineQueue;
@@ -25,24 +24,40 @@ public abstract class AIListener
       lineQueue = new LinkedBlockingQueue<>();
    }
 
+   /**
+    * Register this to the AnsiParser
+    * TODO - if we change AnsiParser to implement a "Parser" interface, update this as well
+    */
    public void register()
    {
       AnsiParser.registerListener(this);
-      poll();
+      Thread poller = new Thread(this);
+      poller.start();
    }
 
+   /**
+    * Deregister the listener
+    */
    public void deregister()
    {
       listening = false;
       AnsiParser.deRegisterListener(this);
    }
 
-   public void add(String line)
+   /**
+    * Add the line to the queue for trigger / script processing
+    * @param line
+    */
+   private void add(String line)
    {
       lineQueue.add(line);
    }
 
-   protected void poll()
+   /**
+    * Poll the queue for processing triggers and scripts
+    */
+   @Override
+   public void run()
    {
       listening = true;
       String line = null;
@@ -51,8 +66,10 @@ public abstract class AIListener
          try
          {
             line = lineQueue.poll(250, TimeUnit.MILLISECONDS);
-            // if (listening)
-            // process(line);
+            if (listening)
+            {
+               trigger(line);
+            }
          }
          catch (InterruptedException e)
          {
@@ -63,5 +80,29 @@ public abstract class AIListener
       }
    }
 
-   abstract public void process(List<StyleRange> ranges, String line);
+   /**
+    * Add the line and styles for formatting updates / corrections
+    * @param line
+    * @param ranges
+    * @return
+    */
+   public String process(String line, List<StyleRange> ranges)
+   {
+      add(line);
+      return format(line,ranges);
+   }
+   
+   /**
+    * Format the line. Return null if it shouldn't be printed.
+    * @param line
+    * @param ranges
+    * @return
+    */
+   abstract protected String format(String line, List<StyleRange> ranges);
+   
+   /**
+    * Process any triggers or scripts based on this line
+    * @param line
+    */
+   abstract protected void trigger(String line);
 }

@@ -246,7 +246,20 @@ public class AnsiParser
     */
    private static void processString()
    {
-      if (lineBuffer.length() > 0)
+      // send the string to all listeners
+      for (AIListener listener : listeners)
+      {
+         lineBuffer = listener.process(lineBuffer, ranges);
+      }
+      
+      // formatters could choose not to print this string by sending null back
+      if (lineBuffer == null)
+      {
+         return;
+      }
+      
+      // process style ranges if they exist and can be applied
+      if (lineBuffer.length() > 0 && ranges != null)
       {
          // change the length of each range that hasn't been terminated
          for (StyleRange r : ranges)
@@ -257,12 +270,6 @@ public class AnsiParser
                r.length = lineBuffer.length() - r.start - 1;
             }
          }
-      }
-   
-      // send the string to all listeners
-      for (AIListener listener : listeners)
-      {
-         listener.process(ranges, lineBuffer);
       }
 
       // and write
