@@ -15,11 +15,10 @@ public class MclMUDMain
    public static void main(String[] args)
    {
       initLogger();
-      
-      MudFrame frame = new MudFrame();
-      frame.init();
+
+      (new MudFrame()).init();
    }
-   
+
    private static void initLogger()
    {
       Handler handler = null;
@@ -35,7 +34,7 @@ public class MclMUDMain
       }
       try
       {
-         handler = new FileHandler("logs/mclmud.log", 10*1024*1024,5);
+         handler = new FileHandler("logs/mclmud.log", 10 * 1024 * 1024, 5);
       }
       catch (SecurityException e)
       {
@@ -49,7 +48,7 @@ public class MclMUDMain
          System.exit(1);
          return;
       }
-      
+
       handler.setLevel(Level.ALL);
       Logger.getLogger("").addHandler(handler);
       Logger.getLogger("").setUseParentHandlers(false);
