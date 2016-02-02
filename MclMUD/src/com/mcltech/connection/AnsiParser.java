@@ -120,16 +120,23 @@ public class AnsiParser
       for (int ii = 0; ii < bytes.length && ii < len; ii++)
       {
          byte b = bytes[ii];
-         // on a newline, add to the string and put it onto the output text box
-         if (b == newline || b == carriage || b == formfeed)
+         // ignore the double \r\n for conversion, but don't skip \n\n or others
+         if (isCarriage)
          {
-            // ignore the double \r\n (slightly sloppy way to do it that skips all double returns)
-            if (isCarriage)
+            if (b == newline)
             {
                isCarriage = false;
                continue;
             }
+            isCarriage = false;
+         }
+         else if (b == carriage)
+         {
             isCarriage = true;
+         }
+         // on a newline, add to the string and put it onto the output text box
+         if (b == newline || b == carriage || b == formfeed)
+         {
             try
             {
                lineBuffer += (new String(out, startIdx, idx - startIdx, "cp1252"));
@@ -143,8 +150,7 @@ public class AnsiParser
             processString();
             continue;
          }
-         
-         isCarriage = false;
+
          if (inEscape)
          {
             // check for escape commands that we don't parse
@@ -251,16 +257,16 @@ public class AnsiParser
                r.length = lineBuffer.length() - r.start - 1;
             }
          }
-   
-         // send the string to all listeners
-         for (AIListener listener : listeners)
-         {
-            listener.process(ranges, lineBuffer);
-         }
-   
-         // and write
-         frame.writeToTextBox(lineBuffer, ranges);
       }
+   
+      // send the string to all listeners
+      for (AIListener listener : listeners)
+      {
+         listener.process(ranges, lineBuffer);
+      }
+
+      // and write
+      frame.writeToTextBox(lineBuffer, ranges);
 
       // reset the line buffer and the ranges. We have the option to continue with
       // the "continuedSequnces" here, but I'm currently opting to end all sequences
