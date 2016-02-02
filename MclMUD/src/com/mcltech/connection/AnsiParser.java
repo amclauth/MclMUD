@@ -11,16 +11,21 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
 
+import com.mcltech.ai.AIListener;
+
 public class AnsiParser
 {
    private static final Logger log = Logger.getLogger(AnsiParser.class.getName());
    private static Color[] colors = new Color[10];
+   private static List<AIListener> listeners;
    
    private static final byte esc = (byte)0x1B;
    private static final byte ctr = (byte)0x5B;
    private static final byte end = (byte)0x6D;
    private static final byte sep1 = (byte)0x3A;
    private static final byte sep2 = (byte)0x3B;
+   
+   private static List<Integer> continuedSequences;
    
    public static void init(Display display)
    {
@@ -32,7 +37,20 @@ public class AnsiParser
       colors[5] = display.getSystemColor(SWT.COLOR_MAGENTA);
       colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
       colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
+      listeners = new ArrayList<>();
+      continuedSequences = new ArrayList<>();
    }
+   
+   public static void registerListener(AIListener listener)
+   {
+      listeners.add(listener);
+   }
+   
+   public static void deRegisterListener(AIListener listener)
+   {
+      listeners.remove(listener);
+   }
+   
    /**
     * Given a byte string (presumed ansi), parse it for color and style sequences
     * and print it out to the styled text widget
@@ -44,7 +62,23 @@ public class AnsiParser
    {
       byte[] out = new byte[bytes.length];
       int idx = 0;
+      
+      try
+      {
+         String s = new String(bytes,0,len,"cp1252");
+         System.out.println(s);
+      }
+      catch (@SuppressWarnings("unused") UnsupportedEncodingException e1)
+      {
+         // just for debug
+      }
       List<StyleRange> ranges = new ArrayList<>();
+      Integer[] sequences = continuedSequences.toArray(new Integer[0]);
+      continuedSequences.clear();
+      for (Integer sequence : sequences)
+      {
+         setStyle(sequence.intValue(), ranges, 0);
+      }
       for (int ii = 0; ii < bytes.length && ii < len; ii++)
       {
          byte b = bytes[ii];
@@ -95,12 +129,18 @@ public class AnsiParser
       for (StyleRange r : ranges)
       {
          if (r.length == -1)
+         {
             r.length = idx - r.start;
+         }
       }
       
       try
       {
          String line = new String(out, 0, idx, "cp1252");
+         for (AIListener listener : listeners)
+         {
+            listener.add(line);
+         }
          Display.getDefault().asyncExec(new Runnable()
          {
             @Override
@@ -129,10 +169,17 @@ public class AnsiParser
       }
    }
    
+   /**
+    * Add a StyleRange or truncate StyleRanges depending on the control sequence
+    * @param sequence
+    * @param ranges
+    * @param idx
+    */
    private static void setStyle(int sequence, List<StyleRange> ranges, int idx)
    {
       if (sequence == 0)
       {
+         continuedSequences.clear();
          for (StyleRange range : ranges)
          {
             if (range.length == -1)
@@ -142,6 +189,8 @@ public class AnsiParser
          }
          return;
       }
+      
+      continuedSequences.add(Integer.valueOf(sequence));
       
       StyleRange range = new StyleRange();
       range.start = idx;
@@ -182,6 +231,11 @@ public class AnsiParser
       ranges.add(range);
    }
    
+   /**
+    * Convert bytes to numbers (since Java has a weird way of handling bytes)
+    * @param b
+    * @return
+    */
    private static int convert(byte b)
    {
       switch (b)
