@@ -6,7 +6,7 @@ import java.util.List;
 import org.eclipse.swt.custom.StyleRange;
 
 import com.mcltech.ai.AIInterface;
-import com.mcltech.ai.ServiceInterface;
+import com.mcltech.base.ServiceInterface;
 import com.mcltech.connection.MudFrame;
 
 public class MumeAI implements AIInterface
@@ -14,7 +14,7 @@ public class MumeAI implements AIInterface
    MudFrame frame;
    MumeTime mumeTime;
    
-   List<ServiceInterface> services;
+   List<AIInterface> services;
 
    public MumeAI(MudFrame frame)
    {
@@ -44,7 +44,15 @@ public class MumeAI implements AIInterface
    @Override
    public String format(String line, List<StyleRange> ranges)
    {
-      return line;
+      if (line == null || line.isEmpty())
+         return line;
+      
+      String out = line;
+      for (AIInterface service : services)
+      {
+         out = service.format(line, ranges);
+      }
+      return out;
    }
 
    @Override
@@ -53,24 +61,13 @@ public class MumeAI implements AIInterface
       if (line == null || line.isEmpty())
          return;
       
-      // clock parsing
-      if (line.startsWith("The current time is "))
-      {
-         mumeTime.setClock(line);
-      }
       
-      // day parsing
-      if (mumeTime.monthPattern.matcher(line).find(0))
-      {
-         mumeTime.setCalendar(line);
-      }
    }
 
    @Override
-   public String[] command(String line)
+   public String command(String line)
    {
-      String [] data = {line};
-      return data;
+      return line;
    }
    
    

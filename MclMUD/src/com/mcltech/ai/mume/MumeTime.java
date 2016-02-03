@@ -1,17 +1,27 @@
 package com.mcltech.ai.mume;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.mcltech.ai.ServiceInterface;
+import org.eclipse.swt.custom.StyleRange;
+
+import com.mcltech.ai.AIInterface;
 import com.mcltech.connection.Configger;
 import com.mcltech.connection.MudFrame;
 
-public class MumeTime implements ServiceInterface
+/**
+ * A time class that will inspect the outputs of "time" and "look clock" and 
+ * start timers in the title bar that tell the time of day, whether it's day
+ * or night outside, and the time till the next change.
+ * @author andymac
+ *
+ */
+public class MumeTime implements AIInterface
 {
    MudFrame frame;
    
@@ -298,5 +308,33 @@ public class MumeTime implements ServiceInterface
             }
          }
       }, 0, 1000);
+   }
+
+   @Override
+   public String format(String line, List<StyleRange> ranges)
+   {
+      return line;
+   }
+
+   @Override
+   public void trigger(String line)
+   {
+      // clock parsing
+      if (line.startsWith("The current time is "))
+      {
+         setClock(line);
+      }
+      
+      // day parsing
+      if (monthPattern.matcher(line).find(0))
+      {
+         setCalendar(line);
+      }
+   }
+
+   @Override
+   public String command(String line)
+   {
+       return line;
    }
 }

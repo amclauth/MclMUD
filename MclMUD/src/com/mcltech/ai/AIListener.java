@@ -245,6 +245,11 @@ public class AIListener implements Runnable
     */
    public String[] processCommand(String line)
    {
+      if (line == null || line.isEmpty())
+      {
+         return new String[0];
+      }
+      
       if (line.startsWith("alias"))
       {
          if (line.trim().equals("alias"))
@@ -278,7 +283,7 @@ public class AIListener implements Runnable
             return handleAlias(alias,in);
          }
       }
-      return ai.command(line);
+      return ai.command(line).split(";");
    }
    
    /**

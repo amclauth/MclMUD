@@ -17,7 +17,7 @@ import com.mcltech.base.MudLogger;
  * not a thread safe class, but the input is serialized by the controller's read, so
  * should be quite safe for this application.
  * @author andymac
- *
+ * 
  */
 public class AnsiParser
 {
@@ -32,6 +32,7 @@ public class AnsiParser
    private static final byte newline = (byte) 0x0A;
    private static final byte formfeed = (byte) 0x0C;
    private static final byte carriage = (byte) 0x0D;
+   private static final byte bell = (byte) 0x07;
 
    private static List<Integer> continuedSequences;
    private static boolean inEscape;
@@ -189,6 +190,12 @@ public class AnsiParser
             if (b == esc)
             {
                inEscape = true;
+               continue;
+            }
+            else if (b == bell)
+            {
+               //TODO this won't work in a lot of systems ... might try flashing the screen instead.
+               java.awt.Toolkit.getDefaultToolkit().beep();
                continue;
             }
             

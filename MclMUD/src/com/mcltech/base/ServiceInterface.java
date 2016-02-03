@@ -1,4 +1,4 @@
-package com.mcltech.ai;
+package com.mcltech.base;
 
 public interface ServiceInterface
 {

@@ -33,10 +33,9 @@ public class BasicAI implements AIInterface
    }
 
    @Override
-   public String[] command(String line)
+   public String command(String line)
    {
-      String [] data = {line};
-      return data;
+      return line;
    }
 
 }

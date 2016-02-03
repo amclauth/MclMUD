@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.eclipse.swt.custom.StyleRange;
 
+import com.mcltech.base.ServiceInterface;
+
 public interface AIInterface extends ServiceInterface
 {
    
@@ -27,5 +29,5 @@ public interface AIInterface extends ServiceInterface
     * @return true if no other action should be taken, false if the command should
     *         be sent on to the MUD
     */
-   public String[] command(String line);
+   public String command(String line);
 }
