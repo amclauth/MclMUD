@@ -6,7 +6,16 @@ import org.eclipse.swt.custom.StyleRange;
 
 public interface AIInterface
 {
+   
+   /**
+    * Method to tell the AI to start / initialize
+    */
+   public void start();
 
+   /**
+    * method to tell the AI to stop any extra threads it may have spawned.
+    */
+   public void stop();
    
    /**
     * Format the output line. Return null if it shouldn't be printed.
@@ -28,5 +37,5 @@ public interface AIInterface
     * @return true if no other action should be taken, false if the command should
     *         be sent on to the MUD
     */
-   public boolean command(String line);
+   public String[] command(String line);
 }

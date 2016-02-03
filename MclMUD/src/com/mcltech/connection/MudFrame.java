@@ -65,10 +65,6 @@ public class MudFrame
          @Override
          public void run()
          {
-            String lineCopy = ai.processOutput(line, ranges);
-            if (lineCopy == null)
-               return;
-            
             int caret = outputText.getCharCount();
             outputText.append(line + "\n");
             for (StyleRange range : rangeCopy)
@@ -243,10 +239,13 @@ public class MudFrame
                {
                   addConnection(inputText.getText());
                }
-               String line = inputText.getText();
-               if (!ai.processCommand(line))
+               String[] commands = ai.processCommand(inputText.getText());
+               if (commands != null)
                {
-                  controller.write(inputText.getText() + "\n");
+                  for (String command : commands)
+                  {
+                     controller.write(command + "\n");
+                  }
                }
                // keep the text there and selected, so just pressing enter
                // repeats the last command

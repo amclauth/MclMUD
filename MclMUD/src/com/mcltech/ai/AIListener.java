@@ -38,7 +38,7 @@ public class AIListener implements Runnable
    public AIListener(MudFrame frame, String name)
    {
       AIMap.put("basic", new BasicAI());
-      AIMap.put("m.u.m.e.", new MumeAI());
+      AIMap.put("m.u.m.e.", new MumeAI(frame));
       
       lineQueue = new LinkedBlockingQueue<>();
       ai = new BasicAI();
@@ -56,6 +56,7 @@ public class AIListener implements Runnable
    {
       listening = false;
       poller.interrupt();
+      ai.stop();
    }
    
    /**
@@ -202,6 +203,27 @@ public class AIListener implements Runnable
          }
       }
    }
+   
+   private String[] handleAlias(String alias, String line)
+   {
+      if (line.equals(alias))
+      {
+         return aliases.get(alias);
+      }
+      String[] extras = line.substring(alias.length() + 1).split(" ");
+      String[] aliasCommands = aliases.get(alias);
+      String[] commands = new String[aliasCommands.length];
+      int extraIdx = 0;
+      for (int ii = 0; ii < commands.length; ii++)
+      {
+         commands[ii] = aliasCommands[ii];
+         while (commands[ii].contains("%%"))
+         {
+            commands[ii].replaceFirst("%%",extras[extraIdx]);
+         }
+      }
+      return commands;
+   }
 
    /**
     * Add the line and styles for formatting updates / corrections
@@ -218,19 +240,27 @@ public class AIListener implements Runnable
    /**
     * This handles things like alias creation
     * @param line
-    * @return true if it shouldn't be handled separately
+    * @return null or the command to be sent
     */
-   public boolean processCommand(String line)
+   public String[] processCommand(String line)
    {
       if (line.startsWith("alias ") && line.length() > 6)
       {
          addAlias(line.substring(6));
-         return true;
+         return null;
       } 
       else if (line.startsWith("#loadAI ") && line.length() > 8)
       {
          swapAI(line.substring(8));
-         return true;
+         return null;
+      }
+      for (String alias : aliases.keySet())
+      {
+         String in = line.trim();
+         if (in.equals(alias) || in.startsWith(alias + " "))
+         {
+            return handleAlias(alias,in);
+         }
       }
       return ai.command(line);
    }
@@ -241,12 +271,16 @@ public class AIListener implements Runnable
     */
    public boolean swapAI(String aiName)
    {
+      if (ai != null)
+         ai.stop();
+      
       AIInterface newAI = AIMap.get(aiName.toLowerCase());
       if (newAI != null)
       {
          ai = newAI;
          name = aiName;
          frame.writeToTextBox("Now using AI: " + name, null);
+         ai.start();
          return true;
       }
 

@@ -9,6 +9,18 @@ public class BasicAI implements AIInterface
    public BasicAI() {}
    
    @Override
+   public void stop()
+   {
+      
+   }
+   
+   @Override
+   public void start()
+   {
+      
+   }
+   
+   @Override
    public String format(String line, List<StyleRange> ranges)
    {
       return line;
@@ -21,9 +33,10 @@ public class BasicAI implements AIInterface
    }
 
    @Override
-   public boolean command(String line)
+   public String[] command(String line)
    {
-      return false;
+      String [] data = {line};
+      return data;
    }
 
 }

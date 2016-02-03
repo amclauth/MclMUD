@@ -36,7 +36,17 @@ Aliases:
 	2) In the file
 		It's almost the same in the file. Just add a new line with your alias in 
 		the same format, excluding the word "alias":
-		circle:n;e;s;w
+		circle:n;e;s;
+		
+	If you want to have an alias use additional text, include %% where that text
+	would go. For example, if you have an alias "pp:put %% in pack", then if you
+	type "pp bread", the command will be "put bread in pack". You can chain these
+	for however many space delimited words you want to include in the alias.
+	
+	Using the same example, if you had the alias "p:put %% in %%" and you typed
+	"p bread pack", you'd execute the command "put bread in pack". If, instead,
+	you typed "p bread pack and more", the command sent to the MUD would be
+	"put bread in pack and more".
 		
 Triggers, scripts, and formatting
 	Triggers, scripts, and formatting are handled a little differently in this 
