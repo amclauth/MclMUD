@@ -248,7 +248,7 @@ public class AIListener implements Runnable
       {
          if (line.trim().equals("alias"))
          {
-            StringBuffer buf = new StringBuffer();
+            StringBuilder buf = new StringBuilder();
             buf.append("\n\nAliases:\n");
             String[] keys = aliases.keySet().toArray(new String[0]);
             Arrays.sort(keys);
