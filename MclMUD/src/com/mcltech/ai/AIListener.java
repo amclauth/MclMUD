@@ -1,6 +1,16 @@
 package com.mcltech.ai;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -8,9 +18,9 @@ import java.util.logging.Level;
 import org.eclipse.swt.custom.StyleRange;
 
 import com.mcltech.base.MudLogger;
-import com.mcltech.connection.AnsiParser;
+import com.mcltech.connection.MudFrame;
 
-public abstract class AIListener implements Runnable
+public class AIListener implements Runnable
 {
    // formatter needs to be serial. Pass writes to this first for commands and aliases. Triggers / scripts
    // should be handled in a different thread
@@ -18,30 +28,143 @@ public abstract class AIListener implements Runnable
 
    protected LinkedBlockingQueue<String> lineQueue;
    protected boolean listening = false;
+   private String name;
+   private Map<String,String[]> aliases;
+   private MudFrame frame;
+   private Thread poller;
+   private AIInterface ai;
+   private Map<String,AIInterface> AIMap = new HashMap<>();
 
-   public AIListener()
+   public AIListener(MudFrame frame, String name)
    {
+      AIMap.put("basic", new BasicAI());
+      AIMap.put("m.u.m.e.", new MumeAI());
+      
       lineQueue = new LinkedBlockingQueue<>();
-   }
-
-   /**
-    * Register this to the AnsiParser
-    * TODO - if we change AnsiParser to implement a "Parser" interface, update this as well
-    */
-   public void register()
-   {
-      AnsiParser.registerListener(this);
-      Thread poller = new Thread(this);
+      ai = new BasicAI();
+      this.frame = frame;
+      this.name = name;
+      loadAliases();
+      poller = new Thread(this);
       poller.start();
    }
 
    /**
-    * Deregister the listener
+    * Deregister the listener (so it can be swapped)
     */
    public void deregister()
    {
       listening = false;
-      AnsiParser.deRegisterListener(this);
+      poller.interrupt();
+   }
+   
+   /**
+    * Add an alias string
+    * @param aliasString in the form: name:command1;command2;...
+    * @return
+    */
+   protected boolean addAlias(String aliasString)
+   {
+      int idx = aliasString.indexOf(':');
+      if (idx <= 0 || idx == aliasString.length() - 1)
+      {
+         log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString + "}");
+         frame.writeToTextBox("Alias is improperly formatted. {" + aliasString + "}", null);
+         return false;
+      }
+      String alias = aliasString.substring(0, idx);
+      String[] commands = aliasString.substring(idx+2).split(";");
+      // double check
+      if (commands.length == 0 || alias.length() == 0)
+      {
+         log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString + "}");
+         frame.writeToTextBox("Alias is improperly formatted. {" + aliasString + "}", null);
+         return false;
+      }
+      aliases.put(alias, commands);
+      writeAliases();
+      return true;
+   }
+   
+   /**
+    * Write the alias file
+    */
+   private void writeAliases()
+   {
+      if (name == null || name.isEmpty())
+         return;
+      
+      File aliasFile = new File("config/" + name + ".alias");
+      if (!aliasFile.exists())
+      {
+         try
+         {
+            aliasFile.createNewFile();
+         }
+         catch (IOException e)
+         {
+            log.add(Level.WARNING, "Can't create alias file {" + aliasFile.getAbsolutePath() + "}", e);
+         }
+      }
+      
+      try (BufferedWriter bw = new BufferedWriter(new FileWriter(aliasFile)))
+      {
+         for (String alias : aliases.keySet())
+         {
+            bw.write(alias + ":" + String.join(";", aliases.get(alias)));
+         }
+         bw.close();
+      }
+      catch (IOException e)
+      {
+         log.add(Level.SEVERE,"Couldn't write alias file {" + aliasFile.getAbsolutePath() + "}", e);
+         frame.writeToTextBox("Couldn't write alias file {" + aliasFile.getAbsolutePath() + "}", null);
+      }
+   }
+   
+   /**
+    * Load alias file into aliases
+    */
+   private void loadAliases()
+   {
+      if (name == null || name.isEmpty())
+         return;
+      
+      aliases = new HashMap<>();
+      File aliasFile = new File("config/" + name.toLowerCase() + ".alias");
+      if (!aliasFile.exists())
+      {
+         return;
+      }
+      
+      try (BufferedReader br = new BufferedReader(new FileReader(aliasFile)))
+      {
+         for (String line; (line = br.readLine()) != null; )
+         {
+            int idx = line.indexOf(':');
+            if (idx <= 0 || idx == line.length() - 1)
+            {
+               log.add(Level.WARNING, "Alias is improperly formatted. {" + line + "}");
+               continue;
+            }
+            String alias = line.substring(0, idx);
+            String[] commands = line.substring(idx+2).split(";");
+            // double check
+            if (commands.length == 0 || alias.length() == 0)
+               continue;
+            aliases.put(alias, commands);
+         }
+         br.close();
+      }
+      catch (@SuppressWarnings("unused") FileNotFoundException e)
+      {
+         // of course it's found, we just checked that it exists. Do nothing just in case.
+      }
+      catch (IOException e)
+      {
+         log.add(Level.SEVERE,"Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", e);
+         frame.writeToTextBox("Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", null);
+      }
    }
 
    /**
@@ -68,12 +191,12 @@ public abstract class AIListener implements Runnable
             line = lineQueue.poll(250, TimeUnit.MILLISECONDS);
             if (listening)
             {
-               trigger(line);
+               ai.trigger(line);
             }
          }
          catch (InterruptedException e)
          {
-            log.add(Level.WARNING, "Listener interrupted: ", e);
+            log.add(Level.INFO, "Listener interrupted: ", e);
             listening = false;
             return;
          }
@@ -86,23 +209,50 @@ public abstract class AIListener implements Runnable
     * @param ranges
     * @return
     */
-   public String process(String line, List<StyleRange> ranges)
+   public String processOutput(String line, List<StyleRange> ranges)
    {
       add(line);
-      return format(line,ranges);
+      return ai.format(line,ranges);
    }
    
    /**
-    * Format the line. Return null if it shouldn't be printed.
+    * This handles things like alias creation
     * @param line
-    * @param ranges
-    * @return
+    * @return true if it shouldn't be handled separately
     */
-   abstract protected String format(String line, List<StyleRange> ranges);
+   public boolean processCommand(String line)
+   {
+      if (line.startsWith("alias ") && line.length() > 6)
+      {
+         addAlias(line.substring(6));
+         return true;
+      } 
+      else if (line.startsWith("#loadAI ") && line.length() > 8)
+      {
+         swapAI(line.substring(8));
+         return true;
+      }
+      return ai.command(line);
+   }
    
    /**
-    * Process any triggers or scripts based on this line
-    * @param line
+    * Swap out the AI
+    * @param aiName
     */
-   abstract protected void trigger(String line);
+   public boolean swapAI(String aiName)
+   {
+      AIInterface newAI = AIMap.get(aiName.toLowerCase());
+      if (newAI != null)
+      {
+         ai = newAI;
+         name = aiName;
+         frame.writeToTextBox("Now using AI: " + name, null);
+         return true;
+      }
+
+      frame.writeToTextBox("AI by name {" + aiName + "} not found.", null);
+      frame.writeToTextBox("Currently registered AI's: " + Arrays.toString(AIMap.keySet().toArray(new String[0])), null);
+      frame.writeToTextBox("Currently using AI: " + name, null);
+      return false;
+   }
 }

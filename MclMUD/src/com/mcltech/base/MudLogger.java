@@ -59,7 +59,7 @@ public class MudLogger implements Runnable
 
       handler.setLevel(Level.ALL);
       Logger.getLogger("").addHandler(handler);
-      Logger.getLogger("").setUseParentHandlers(false);
+//      Logger.getLogger("").setUseParentHandlers(false);
    }
 
    /**

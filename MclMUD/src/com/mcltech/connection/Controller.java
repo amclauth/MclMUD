@@ -57,13 +57,11 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       catch (InvalidTelnetOptionException e)
       {
          log.add(Level.SEVERE, "Error registering Option handler", e);
-         System.out.println("Could not initiate Telnet.");
          return false;
       }
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Error registering Option handler", e);
-         System.out.println("Could not initiate Telnet.");
          return false;
       }
 
@@ -101,7 +99,6 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Command not sent {" + line + "}", e);
-         System.out.println("Command not sent {" + line + "}");
          frame.writeToTextBox("\n\n***Could not send command! Disconnecting. Error is logged.***\n\n", null);
          disconnect(); // clean up
          return false;
@@ -119,7 +116,7 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
    {
       if (isConnected)
       {
-         System.out.println(
+         log.add(Level.INFO,
                "Could not connect to {" + hostname + ":" + port + "}. A connection is already in use.");
          frame.writeToTextBox(
                "\n\n***Could not connect to {" + hostname + ":" + port + "}. A connection is already in use.***\n\n", null);
@@ -133,7 +130,6 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Error connecting to {" + hostname + ":" + port + "}", e);
-         System.out.println("Could not connect to {" + hostname + ":" + port + "}");
          frame.writeToTextBox(
                "\n\n***Could not connect to {" + hostname + ":" + port + "}. Error is logged.***\n\n", null);
          return false;
@@ -166,11 +162,11 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Could not disconnect: ", e);
-         System.out.println("Could not disconnect.");
          frame.writeToTextBox("\n\n***Could not disconnect. Error is logged.***\n\n", null);
          isConnected = false;
          return false;
       }
+
       isConnected = false;
       return true;
    }
@@ -206,7 +202,7 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
                AnsiParser.flush();
             }
          }
-         while (ret_read >= 0);
+         while (ret_read >= 0 && isConnected);
 
          in.close();
          isConnected = false;
@@ -214,9 +210,8 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       }
       catch (IOException e)
       {
-         log.add(Level.SEVERE, "Error reading connection: ", e);
-         System.out.println("Could no longer read connection.");
-         System.out.println("\n\n***Could no longer read connection. Disconnecting. Error is logged.***\n\n");
+         log.add(Level.SEVERE, "Could no longer read connection. ", e);
+         frame.writeToTextBox("\n\n***Could no longer read connection. Disconnecting. Error is logged.***\n\n", null);
          disconnect();
       }
    }

@@ -4,9 +4,10 @@ import java.util.List;
 
 import org.eclipse.swt.custom.StyleRange;
 
-public class MumeAI implements AIInterface
+public class BasicAI implements AIInterface
 {
-
+   public BasicAI() {}
+   
    @Override
    public String format(String line, List<StyleRange> ranges)
    {

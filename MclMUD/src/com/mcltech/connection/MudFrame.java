@@ -22,6 +22,7 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import com.mcltech.ai.AIListener;
 import com.mcltech.base.MudLogger;
 
 /**
@@ -38,6 +39,7 @@ public class MudFrame
    StyledText outputText;
    Text inputText;
    Controller controller;
+   AIListener ai;
 
    public MudFrame()
    {
@@ -63,6 +65,10 @@ public class MudFrame
          @Override
          public void run()
          {
+            String lineCopy = ai.processOutput(line, ranges);
+            if (lineCopy == null)
+               return;
+            
             int caret = outputText.getCharCount();
             outputText.append(line + "\n");
             for (StyleRange range : rangeCopy)
@@ -76,7 +82,6 @@ public class MudFrame
                IllegalArgumentException e)
                {
                   // don't die if this happens somehow (update while trimming lines from above)
-                  System.out.println(range.start + ":" + range.length + ":" + caret);
                }
             }
 
@@ -84,7 +89,6 @@ public class MudFrame
                   && outputText.getCharCount() > outputText.getTextLimit() - 1000))
             {
                int offset = outputText.getOffsetAtLine(10);
-               System.out.println("Idx: " + offset);
                if (offset < outputText.getCharCount() && offset > 0)
                   outputText.replaceTextRange(0, offset, "");
             }
@@ -107,7 +111,8 @@ public class MudFrame
       createMenu();
       createOutputScreen();
       createInputScreen();
-
+      
+      ai = new AIListener(this,"Basic");
       AnsiParser.init(display, this);
       controller = new Controller(this);
       controller.init();
@@ -169,6 +174,8 @@ public class MudFrame
             display.sleep();
       }
       display.dispose();
+      ai.deregister();
+      controller.disconnect();
    }
 
    /**
@@ -236,7 +243,11 @@ public class MudFrame
                {
                   addConnection(inputText.getText());
                }
-               controller.write(inputText.getText() + "\n");
+               String line = inputText.getText();
+               if (!ai.processCommand(line))
+               {
+                  controller.write(inputText.getText() + "\n");
+               }
                // keep the text there and selected, so just pressing enter
                // repeats the last command
                inputText.selectAll();
@@ -254,7 +265,7 @@ public class MudFrame
 
       // connect main item
       MenuItem connectionMenuItem = new MenuItem(menuBar, SWT.CASCADE);
-      connectionMenuItem.setText("&Connect");
+      connectionMenuItem.setText("&Connection");
 
       Menu connectionMenu = new Menu(shell, SWT.DROP_DOWN);
       connectionMenuItem.setMenu(connectionMenu);
@@ -287,12 +298,20 @@ public class MudFrame
             public void widgetSelected(SelectionEvent e)
             {
                controller.connect(details[0], Integer.valueOf(details[1]).intValue());
+               // try to find an AI
+               if (!ai.swapAI(mud))
+               {
+                  ai.swapAI("basic");
+               }
             }
          });
       }
+      
+      @SuppressWarnings("unused")
+      MenuItem menuItem = new MenuItem(connectionMenu, SWT.SEPARATOR);
 
       // disconnect button
-      MenuItem disconnectMenuItem = new MenuItem(menuBar, SWT.CASCADE);
+      MenuItem disconnectMenuItem = new MenuItem(connectionMenu, SWT.PUSH);
       disconnectMenuItem.setText("&Disconnect");
       disconnectMenuItem.addSelectionListener(new SelectionAdapter()
       {
@@ -334,8 +353,8 @@ public class MudFrame
 
          writeToTextBox("\nAdding connection name{" + name + "} address{" + con + "} port{" + pString + "}\n",
                null);
-
-         System.out.println(name + "," + con + "," + port);
+         log.add(Level.INFO,"Adding connection name{" + name + "} address{" + con + "} port{" + port + "}");
+         
          String muds = Configger.getProperty("MUDS", "");
          if (Configger.getProperty(name, "").equals(""))
          {
@@ -364,5 +383,14 @@ public class MudFrame
          writeToTextBox("\nIf entering a connection, need that in name:address:port style.\n", null);
          return;
       }
+   }
+   
+   /**
+    * Get the listener for this connection
+    * @return
+    */
+   public AIListener getListener()
+   {
+      return ai;
    }
 }

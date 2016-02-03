@@ -10,7 +10,6 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
 
-import com.mcltech.ai.AIListener;
 import com.mcltech.base.MudLogger;
 
 /**
@@ -23,8 +22,7 @@ import com.mcltech.base.MudLogger;
 public class AnsiParser
 {
    private static final MudLogger log = MudLogger.getInstance();
-   private static Color[] colors = new Color[10];
-   private static List<AIListener> listeners;
+   public static Color[] colors = new Color[10];
 
    private static final byte esc = (byte) 0x1B;
    private static final byte ctr = (byte) 0x5B;
@@ -63,7 +61,6 @@ public class AnsiParser
       colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
       colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
       
-      listeners = new ArrayList<>();
       continuedSequences = new ArrayList<>();
       inEscape = false;
       inControl = false;
@@ -73,24 +70,6 @@ public class AnsiParser
       lineBuffer = "";
       lbIdx = 0;
       frame = mudframe;
-   }
-
-   /**
-    * Add whatever listeners care about input text
-    * @param listener
-    */
-   public static void registerListener(AIListener listener)
-   {
-      listeners.add(listener);
-   }
-
-   /**
-    * Remove a listener
-    * @param listener
-    */
-   public static void deRegisterListener(AIListener listener)
-   {
-      listeners.remove(listener);
    }
 
    /**
@@ -145,7 +124,6 @@ public class AnsiParser
             catch (UnsupportedEncodingException e)
             {
                log.add(Level.SEVERE,"UnsupportedEncodingException: ", e);
-               System.out.println("Unsupported Encoding Exception");
             }
             processString();
             continue;
@@ -228,7 +206,6 @@ public class AnsiParser
       catch (UnsupportedEncodingException e1)
       {
          log.add(Level.SEVERE,"UnsupportedEncodingException: ", e1);
-         System.out.println("Unsupported Encoding Exception");
       }
 
    }
@@ -246,11 +223,8 @@ public class AnsiParser
     */
    private static void processString()
    {
-      // send the string to all listeners
-      for (AIListener listener : listeners)
-      {
-         lineBuffer = listener.process(lineBuffer, ranges);
-      }
+      // send the string to the listeners
+      lineBuffer = frame.getListener().processOutput(lineBuffer, ranges);
       
       // formatters could choose not to print this string by sending null back
       if (lineBuffer == null)
