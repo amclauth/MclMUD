@@ -17,6 +17,7 @@ import java.util.logging.Level;
 
 import org.eclipse.swt.custom.StyleRange;
 
+import com.mcltech.ai.mume.MumeAI;
 import com.mcltech.base.MudLogger;
 import com.mcltech.connection.MudFrame;
 

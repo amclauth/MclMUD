@@ -1,19 +1,16 @@
-package com.mcltech.ai;
+package com.mcltech.ai.mume;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.swt.custom.StyleRange;
-
 import com.mcltech.connection.Configger;
 import com.mcltech.connection.MudFrame;
 
-public class MumeAI implements AIInterface
+public class MumeTime implements PackageInterface
 {
    MudFrame frame;
    
@@ -24,10 +21,10 @@ public class MumeAI implements AIInterface
    int month = -1;
    int day = -1;
    
-   private Pattern monthPattern = Pattern.compile("\\A\\w+, the (\\d+)\\w+ of (\\w+), Year");
+   Pattern monthPattern = Pattern.compile("\\A\\w+, the (\\d+)\\w+ of (\\w+), Year");
    Map<String,calendarMonth> monthMap = new HashMap<>();
-
-   public MumeAI(MudFrame frame)
+   
+   public MumeTime(MudFrame frame)
    {
       this.frame = frame;
       monthMap.put("Afteryule", new calendarMonth(0,8,19));
@@ -82,40 +79,8 @@ public class MumeAI implements AIInterface
    {
       clockTimer.cancel();
    }
-
-   @Override
-   public String format(String line, List<StyleRange> ranges)
-   {
-      return line;
-   }
-
-   @Override
-   public void trigger(String line)
-   {
-      if (line == null || line.isEmpty())
-         return;
-      
-      // clock parsing
-      if (line.startsWith("The current time is "))
-      {
-         setClock(line);
-      }
-      
-      // day parsing
-      if (monthPattern.matcher(line).find(0))
-      {
-         setCalendar(line);
-      }
-   }
-
-   @Override
-   public String[] command(String line)
-   {
-      String [] data = {line};
-      return data;
-   }
    
-   private void setCalendar(String line)
+   void setCalendar(String line)
    {
       if (!timeKnown)
          return;
@@ -148,7 +113,7 @@ public class MumeAI implements AIInterface
       }
    }
    
-   private void setCalendar()
+   void setCalendar()
    {
       if (!timeKnown)
          return;
@@ -197,7 +162,7 @@ public class MumeAI implements AIInterface
     * This will update the config file's midnight setting.
     * @param line
     */
-   private void setClock(String line)
+   void setClock(String line)
    {
       String time = line.substring(20,line.length()-1);
       // t is the number of seconds (real time) from midnight
@@ -243,7 +208,7 @@ public class MumeAI implements AIInterface
    /**
     * Set the clock based on what's in the config file
     */
-   private void setClock()
+   void setClock()
    {
       String m = Configger.getProperty("MUMEMIDNIGHT", "");
       if (m.equals(""))
@@ -333,5 +298,4 @@ public class MumeAI implements AIInterface
          }
       }, 0, 1000);
    }
-
 }
