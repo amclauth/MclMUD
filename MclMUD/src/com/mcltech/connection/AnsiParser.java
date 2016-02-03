@@ -118,7 +118,7 @@ public class AnsiParser
          {
             try
             {
-               lineBuffer += (new String(out, startIdx, idx - startIdx, "cp1252"));
+               lineBuffer += (new String(out, startIdx, idx - startIdx, "cp1252")) + "\n";
                startIdx = idx;
             }
             catch (UnsupportedEncodingException e)

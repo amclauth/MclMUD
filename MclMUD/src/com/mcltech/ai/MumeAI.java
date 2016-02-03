@@ -1,8 +1,12 @@
 package com.mcltech.ai;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.swt.custom.StyleRange;
 
@@ -12,18 +16,65 @@ import com.mcltech.connection.MudFrame;
 public class MumeAI implements AIInterface
 {
    MudFrame frame;
+   
    Timer clockTimer;
+   boolean timeKnown = false;
+   int hour;
+   int minute;
+   int month = -1;
+   int day = -1;
+   
+   private Pattern monthPattern = Pattern.compile("\\A\\w+, the (\\d+)\\w+ of (\\w+), Year");
+   Map<String,calendarMonth> monthMap = new HashMap<>();
 
    public MumeAI(MudFrame frame)
    {
-      System.out.println("Starting MumeAI");
       this.frame = frame;
+      monthMap.put("Afteryule", new calendarMonth(0,8,19));
+      monthMap.put("Solmath", new calendarMonth(1,9,18));
+      monthMap.put("Rethe", new calendarMonth(2,8,19));
+      monthMap.put("Astron", new calendarMonth(3,7,20));
+      monthMap.put("Thrimidge", new calendarMonth(4,7,21));
+      monthMap.put("Forelithe", new calendarMonth(5,6,21));
+      monthMap.put("Afterlithe", new calendarMonth(6,5,22));
+      monthMap.put("Wedmath", new calendarMonth(7,4,23));
+      monthMap.put("Halimath", new calendarMonth(8,5,22));
+      monthMap.put("Winterfilth", new calendarMonth(9,6,21));
+      monthMap.put("Blotmath", new calendarMonth(10,7,21));
+      monthMap.put("Foreyule", new calendarMonth(11,7,20));
+      
+      monthMap.put("Narwain", new calendarMonth(0,8,19));
+      monthMap.put("Nínui", new calendarMonth(1,9,18));
+      monthMap.put("Gwaeron", new calendarMonth(2,8,19));
+      monthMap.put("Gwirith", new calendarMonth(3,7,20));
+      monthMap.put("Lothron", new calendarMonth(4,7,21));
+      monthMap.put("Nórui", new calendarMonth(5,6,21));
+      monthMap.put("Cerveth", new calendarMonth(6,5,22));
+      monthMap.put("Urui", new calendarMonth(7,4,23));
+      monthMap.put("Ivanneth", new calendarMonth(8,5,22));
+      monthMap.put("Narbeleth", new calendarMonth(9,6,21));
+      monthMap.put("Hithui", new calendarMonth(10,7,21));
+      monthMap.put("Girithron", new calendarMonth(11,7,20));
+      
+      monthMap.put("0", new calendarMonth(0,8,19));
+      monthMap.put("1", new calendarMonth(1,9,18));
+      monthMap.put("2", new calendarMonth(2,8,19));
+      monthMap.put("3", new calendarMonth(3,7,20));
+      monthMap.put("4", new calendarMonth(4,7,21));
+      monthMap.put("5", new calendarMonth(5,6,21));
+      monthMap.put("6", new calendarMonth(6,5,22));
+      monthMap.put("7", new calendarMonth(7,4,23));
+      monthMap.put("8", new calendarMonth(8,5,22));
+      monthMap.put("9", new calendarMonth(9,6,21));
+      monthMap.put("10", new calendarMonth(10,7,21));
+      monthMap.put("11", new calendarMonth(11,7,20));
    }
    
    @Override
    public void start()
    {
       setClock();
+      setCalendar();
    }
    
    @Override
@@ -44,49 +95,16 @@ public class MumeAI implements AIInterface
       if (line == null || line.isEmpty())
          return;
       
+      // clock parsing
       if (line.startsWith("The current time is "))
       {
-         String time = line.substring(20,line.length()-1);
-         System.out.println("Current Time: " + time);
-         // t is the number of seconds (real time) from midnight
-         int t = 0;
-         int h = 0;
-         int m = 0;
-         if (time.endsWith("pm"))
-         {
-            t += 12*60;
-         }
-         time = time.substring(0,time.length()-3);
-         String[] pair = time.split(":");
-         if (pair.length != 2)
-            return;
-         try
-         {
-            h = Integer.valueOf(pair[0]).intValue();
-            m = Integer.valueOf(pair[1]).intValue();
-            if (h == 12)
-            {
-               if (t > 0)
-               {
-                  // 12pm
-                  h = 0; // adding 12 later
-               }
-               else
-               {
-                  h = -12; // adding 12 later
-               }
-            }
-            t += 60*h + m;
-         }
-         catch (@SuppressWarnings("unused") NumberFormatException e)
-         {
-            System.out.println("Nope. Couldn't convert {" + time + "} to to integers.");
-            return;
-         }
-         long midnight = System.currentTimeMillis() / 1000 - t;
-         System.out.println("Got midnight as " + midnight + " and current time as " + h + ":" + m + " ... " + t);
-         Configger.setProperty("MUMEMIDNIGHT", midnight+"");
-         setClock(midnight);
+         setClock(line);
+      }
+      
+      // day parsing
+      if (monthPattern.matcher(line).find(0))
+      {
+         setCalendar(line);
       }
    }
 
@@ -97,6 +115,134 @@ public class MumeAI implements AIInterface
       return data;
    }
    
+   private void setCalendar(String line)
+   {
+      if (!timeKnown)
+         return;
+      Matcher monthMatcher = monthPattern.matcher(line);
+      
+      if (monthMatcher.find(0))
+      {
+         try
+         {
+            day = Integer.valueOf(monthMatcher.group(1)).intValue();
+         }
+         catch (@SuppressWarnings("unused") NumberFormatException e)
+         {
+            System.out.println("Couldn't convert {" + monthMatcher.group(1) + "} to a day");
+            return;
+         }
+         String monthName = monthMatcher.group(2);
+         if (!monthMap.containsKey(monthName))
+         {
+            System.out.println("Month of {" + monthName + "} not in month Map");
+            return;
+         }
+         
+         
+         long now = System.currentTimeMillis() / 1000;
+         long newyear = now - monthMap.get(monthName).num * 30 * 24 * 60 - day * 24 * 60 - hour * 60 - minute;
+         
+         Configger.setProperty("MUMENEWYEAR", newyear + "");
+         setCalendar(newyear);
+      }
+   }
+   
+   private void setCalendar()
+   {
+      if (!timeKnown)
+         return;
+      String m = Configger.getProperty("MUMENEWYEAR", "");
+      if (m.equals(""))
+         return;
+      
+      try {
+         setCalendar(Long.valueOf(m).longValue());
+      }
+      catch (@SuppressWarnings("unused") NumberFormatException e)
+      {
+         System.out.println("Couldn't turn {" + m + "} into a long for setCalendar.");
+      }
+   }
+   
+   private void setCalendar(long newyear)
+   {
+      if (!timeKnown)
+         return;
+      
+      long now = System.currentTimeMillis() / 1000 - newyear;
+      long year = now / 360 / 24 / 60;
+      month = (int) ((now - year * 360 * 24 * 60) / 30 / 24 / 60);
+      day = (int) ((now - year * 360 * 24 * 60 - month * 30 * 24 * 60) / 24 / 60);
+      System.out.println("Month: " + month + ", Day: " + day);
+   }
+   
+   private class calendarMonth
+   {
+      public int num;
+      public int dawn;
+      public int dusk;
+      
+      public calendarMonth(int num,int dawn,int dusk)
+      {
+         this.num = num;
+         this.dawn = dawn;
+         this.dusk = dusk;
+      }
+   }
+      
+   
+   /**
+    * Take in the line of text "The current time is h+:m+ {a|p}m." and parse it.
+    * This will update the config file's midnight setting.
+    * @param line
+    */
+   private void setClock(String line)
+   {
+      String time = line.substring(20,line.length()-1);
+      // t is the number of seconds (real time) from midnight
+      int t = 0;
+      int h = 0;
+      int m = 0;
+      if (time.endsWith("pm."))
+      {
+         t += 12*60;
+      }
+      time = time.substring(0,time.length()-4);
+      String[] pair = time.split(":");
+      if (pair.length != 2)
+         return;
+      try
+      {
+         h = Integer.valueOf(pair[0]).intValue();
+         m = Integer.valueOf(pair[1]).intValue();
+         if (h == 12)
+         {
+            if (t > 0)
+            {
+               // 12pm
+               h = 0; // adding 12 later
+            }
+            else
+            {
+               h = -12; // adding 12 later
+            }
+         }
+         t += 60*h + m;
+      }
+      catch (@SuppressWarnings("unused") NumberFormatException e)
+      {
+         System.out.println("Nope. Couldn't convert {" + time + "} to to integers.");
+         return;
+      }
+      long midnight = System.currentTimeMillis() / 1000 - t;
+      Configger.setProperty("MUMEMIDNIGHT", midnight+"");
+      setClock(midnight);
+   }
+   
+   /**
+    * Set the clock based on what's in the config file
+    */
    private void setClock()
    {
       String m = Configger.getProperty("MUMEMIDNIGHT", "");
@@ -112,12 +258,16 @@ public class MumeAI implements AIInterface
       }
    }
    
+   /**
+    * Set the clock based on a midnight long (seconds since epoch when a midnight occurred).
+    * @param midnight
+    */
    private void setClock(long midnight)
    {
       long now = System.currentTimeMillis();
-      int currentHour = (int) (((now/1000 - midnight) % (24*60))/60);
-      int timeTillNextHour = 60000 - (int) ((now - midnight*1000) % (24*60*1000) - currentHour*60*1000);
-      System.out.println("Current Hour: " + currentHour + ", TTNH: " + timeTillNextHour);
+      hour = (int) (((now/1000 - midnight) % (24*60))/60);
+      minute = (int) (((now/1000 - midnight) % (24*60)) - hour*60);
+//      int timeTillNextHour = 60000 - (int) ((now - midnight*1000) % (24*60*1000) - currentHour*60*1000);
       if (clockTimer != null)
       {
          clockTimer.cancel();
@@ -125,14 +275,63 @@ public class MumeAI implements AIInterface
       clockTimer = new Timer();
       clockTimer.schedule(new TimerTask()
       {
-         int hour = currentHour;
          @Override
          public void run()
          {
-            hour++;
-            frame.writeToTextBox("Current Hour: " + ((hour)%24), null);
+            timeKnown = true;
+            minute++;
+            if (minute == 60)
+            {
+               minute = 0;
+               hour++;
+            }
+            if (hour == 24)
+            {
+               hour = 0;
+               day++;
+            }
+            if (day == 30)
+            {
+               day = 0;
+               month = (month+1)%12;
+            }
+            
+            if (month >= 0 && day >= 0)
+            {
+               calendarMonth cMonth = monthMap.get(month + "");
+               if (hour < cMonth.dawn)
+               {
+                  int tillDawn = cMonth.dawn*60 - hour*60 - minute;
+                  frame.updateTitle(String.format("%02d:%02d NIGHT %02d:%02d", 
+                        Integer.valueOf(hour), Integer.valueOf(minute),
+                        Integer.valueOf(tillDawn / 60), Integer.valueOf(tillDawn % 60)
+                        ));
+               }
+               else if (hour < cMonth.dusk)
+               {
+                  int tillDusk = cMonth.dusk*60 - hour*60 - minute;
+                  frame.updateTitle(String.format("%02d:%02d DAY %02d:%02d", 
+                        Integer.valueOf(hour), Integer.valueOf(minute),
+                        Integer.valueOf(tillDusk / 60), Integer.valueOf(tillDusk % 60)
+                        ));
+               }
+               else
+               {
+                  if (day == 29)
+                     cMonth = monthMap.get(((month+1)%12) + "");
+                  int tillDawn = cMonth.dawn*60 + 24*60 - hour*60 - minute;
+                  frame.updateTitle(String.format("%02d:%02d NIGHT %02d:%02d", 
+                        Integer.valueOf(hour), Integer.valueOf(minute),
+                        Integer.valueOf(tillDawn / 60), Integer.valueOf(tillDawn % 60)
+                        ));
+               }
+            }
+            else
+            {
+               frame.updateTitle(String.format("%02d:%02d", Integer.valueOf(hour), Integer.valueOf(minute)));
+            }
          }
-      }, timeTillNextHour, 1000*60);
+      }, 0, 1000);
    }
 
 }

@@ -60,13 +60,16 @@ public class MudFrame
       if (ranges != null)
          rangeCopy.addAll(ranges);
 
-      Display.getDefault().asyncExec(new Runnable()
+      if (display.isDisposed())
+         return;
+      
+      display.asyncExec(new Runnable()
       {
          @Override
          public void run()
          {
             int caret = outputText.getCharCount();
-            outputText.append(line + "\n");
+            outputText.append(line);
             for (StyleRange range : rangeCopy)
             {
                range.start += caret;
@@ -88,6 +91,21 @@ public class MudFrame
                if (offset < outputText.getCharCount() && offset > 0)
                   outputText.replaceTextRange(0, offset, "");
             }
+         }
+      });
+   }
+   
+   public void updateTitle(String title)
+   {
+      Display.getDefault().asyncExec(new Runnable()
+      {
+         @Override
+         public void run()
+         {
+            if (title == null || title.trim().length() == 0)
+               shell.setText("MclMUD Client");
+            else
+               shell.setText("MclMUD Client " + title.trim());
          }
       });
    }
@@ -170,6 +188,14 @@ public class MudFrame
             display.sleep();
       }
       display.dispose();
+      stop();
+   }
+
+   /**
+    * Stop ongoing processes in the ai and controller
+    */
+   public void stop()
+   {
       ai.deregister();
       controller.disconnect();
    }
@@ -242,6 +268,8 @@ public class MudFrame
                String[] commands = ai.processCommand(inputText.getText());
                if (commands != null)
                {
+                  String com = String.join(";", commands) + "\n";
+                  writeToTextBox(com, null);
                   for (String command : commands)
                   {
                      controller.write(command + "\n");

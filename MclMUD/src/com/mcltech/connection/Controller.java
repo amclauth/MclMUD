@@ -168,6 +168,7 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       }
 
       isConnected = false;
+      frame.stop();
       return true;
    }
 

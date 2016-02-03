@@ -244,11 +244,26 @@ public class AIListener implements Runnable
     */
    public String[] processCommand(String line)
    {
-      if (line.startsWith("alias ") && line.length() > 6)
+      if (line.startsWith("alias"))
       {
+         if (line.trim().equals("alias"))
+         {
+            StringBuffer buf = new StringBuffer();
+            buf.append("\n\nAliases:\n");
+            String[] keys = aliases.keySet().toArray(new String[0]);
+            Arrays.sort(keys);
+            for (String key : keys)
+            {
+               buf.append("  " + key + " -> " + String.join(";", aliases.get(key)) + "\n");
+            }
+            buf.append("\n");
+            frame.writeToTextBox(buf.toString(), null);
+            return null;
+         }
+
          addAlias(line.substring(6));
          return null;
-      } 
+      }
       else if (line.startsWith("#loadAI ") && line.length() > 8)
       {
          swapAI(line.substring(8));
