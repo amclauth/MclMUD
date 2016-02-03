@@ -7,10 +7,11 @@ import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.mcltech.ai.ServiceInterface;
 import com.mcltech.connection.Configger;
 import com.mcltech.connection.MudFrame;
 
-public class MumeTime implements PackageInterface
+public class MumeTime implements ServiceInterface
 {
    MudFrame frame;
    

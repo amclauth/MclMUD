@@ -4,18 +4,8 @@ import java.util.List;
 
 import org.eclipse.swt.custom.StyleRange;
 
-public interface AIInterface
+public interface AIInterface extends ServiceInterface
 {
-   
-   /**
-    * Method to tell the AI to start / initialize
-    */
-   public void start();
-
-   /**
-    * method to tell the AI to stop any extra threads it may have spawned.
-    */
-   public void stop();
    
    /**
     * Format the output line. Return null if it shouldn't be printed.

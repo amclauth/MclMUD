@@ -6,6 +6,7 @@ import java.util.List;
 import org.eclipse.swt.custom.StyleRange;
 
 import com.mcltech.ai.AIInterface;
+import com.mcltech.ai.ServiceInterface;
 import com.mcltech.connection.MudFrame;
 
 public class MumeAI implements AIInterface
@@ -13,7 +14,7 @@ public class MumeAI implements AIInterface
    MudFrame frame;
    MumeTime mumeTime;
    
-   List<PackageInterface> services;
+   List<ServiceInterface> services;
 
    public MumeAI(MudFrame frame)
    {
@@ -25,7 +26,7 @@ public class MumeAI implements AIInterface
    @Override
    public void start()
    {
-      for (PackageInterface service : services)
+      for (ServiceInterface service : services)
       {
          service.start();
       }
@@ -34,7 +35,7 @@ public class MumeAI implements AIInterface
    @Override
    public void stop()
    {
-      for (PackageInterface service : services)
+      for (ServiceInterface service : services)
       {
          service.stop();
       }
