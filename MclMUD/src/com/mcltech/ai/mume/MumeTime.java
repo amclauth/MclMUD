@@ -150,7 +150,6 @@ public class MumeTime implements AIInterface
       long year = now / 360 / 24 / 60;
       month = (int) ((now - year * 360 * 24 * 60) / 30 / 24 / 60);
       day = (int) ((now - year * 360 * 24 * 60 - month * 30 * 24 * 60) / 24 / 60);
-      System.out.println("Month: " + month + ", Day: " + day);
    }
    
    private class calendarMonth
