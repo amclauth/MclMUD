@@ -88,7 +88,8 @@ public class MumeTime implements AIInterface
    @Override
    public void stop()
    {
-      clockTimer.cancel();
+      if (clockTimer != null)
+         clockTimer.cancel();
    }
    
    void setCalendar(String line)
@@ -111,7 +112,6 @@ public class MumeTime implements AIInterface
          String monthName = monthMatcher.group(2);
          if (!monthMap.containsKey(monthName))
          {
-            System.out.println("Month of {" + monthName + "} not in month Map");
             return;
          }
          

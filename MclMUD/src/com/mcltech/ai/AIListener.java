@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 import org.eclipse.swt.custom.StyleRange;
 
@@ -35,6 +36,7 @@ public class AIListener implements Runnable
    private Thread poller;
    private AIInterface ai;
    private Map<String,AIInterface> AIMap = new HashMap<>();
+   private Pattern percentPattern = Pattern.compile("\\%\\%");
 
    public AIListener(MudFrame frame, String name)
    {
@@ -70,21 +72,22 @@ public class AIListener implements Runnable
       int idx = aliasString.indexOf(':');
       if (idx <= 0 || idx == aliasString.length() - 1)
       {
-         log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString + "}");
-         frame.writeToTextBox("Alias is improperly formatted. {" + aliasString + "}", null);
+         log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString + "} should be in format \"alias name:command;command;command;...\"");
+         frame.writeToTextBox("Alias is improperly formatted. {" + aliasString + "} should be in format \"alias name:command;command;command;...\"\n", null);
          return false;
       }
       String alias = aliasString.substring(0, idx);
-      String[] commands = aliasString.substring(idx+2).split(";");
+      String[] commands = aliasString.substring(idx+1).split(";");
       // double check
       if (commands.length == 0 || alias.length() == 0)
       {
-         log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString + "}");
-         frame.writeToTextBox("Alias is improperly formatted. {" + aliasString + "}", null);
+         log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString + "} should be in format \"alias name:command;command;command;...\"");
+         frame.writeToTextBox("Alias is improperly formatted. {" + aliasString + "} should be in format \"alias name:command;command;command;...\"\n", null);
          return false;
       }
       aliases.put(alias, commands);
       writeAliases();
+      frame.writeToTextBox("\nAdded alias " + alias + " -> " + String.join(";", commands) + "\n", null);
       return true;
    }
    
@@ -113,7 +116,7 @@ public class AIListener implements Runnable
       {
          for (String alias : aliases.keySet())
          {
-            bw.write(alias + ":" + String.join(";", aliases.get(alias)));
+            bw.write(alias + ":" + String.join(";", aliases.get(alias)) + "\n");
          }
          bw.close();
       }
@@ -150,7 +153,7 @@ public class AIListener implements Runnable
                continue;
             }
             String alias = line.substring(0, idx);
-            String[] commands = line.substring(idx+2).split(";");
+            String[] commands = line.substring(idx+1).split(";");
             // double check
             if (commands.length == 0 || alias.length() == 0)
                continue;
@@ -211,7 +214,7 @@ public class AIListener implements Runnable
       {
          return aliases.get(alias);
       }
-      String[] extras = line.substring(alias.length() + 1).split(" ");
+      String[] extras = line.substring(alias.length() + 1).trim().split(" ");
       String[] aliasCommands = aliases.get(alias);
       String[] commands = new String[aliasCommands.length];
       int extraIdx = 0;
@@ -220,8 +223,17 @@ public class AIListener implements Runnable
          commands[ii] = aliasCommands[ii];
          while (commands[ii].contains("%%"))
          {
-            commands[ii].replaceFirst("%%",extras[extraIdx]);
+            if (extraIdx >= extras.length)
+            {
+               frame.writeToTextBox("\n***Not enough arguments for alias: " + alias + " -> " + String.join(";",aliasCommands) + "\n\n", null);
+               return null;
+            }
+            commands[ii] = percentPattern.matcher(commands[ii]).replaceFirst(extras[extraIdx++]);
          }
+      }
+      for (int ii = extraIdx; ii < extras.length; ii++)
+      {
+         commands[commands.length - 1] += " " + extras[ii];
       }
       return commands;
    }
@@ -245,9 +257,15 @@ public class AIListener implements Runnable
     */
    public String[] processCommand(String line)
    {
-      if (line == null || line.isEmpty())
+      if (line == null)
       {
          return new String[0];
+      }
+      if (line.trim().isEmpty())
+      {
+         String[] out = new String[1];
+         out[0] = "";
+         return out;
       }
       
       if (line.startsWith("alias"))
@@ -302,12 +320,13 @@ public class AIListener implements Runnable
          name = aiName;
          frame.writeToTextBox("Now using AI: " + name, null);
          ai.start();
+         loadAliases();
          return true;
       }
 
-      frame.writeToTextBox("AI by name {" + aiName + "} not found.", null);
-      frame.writeToTextBox("Currently registered AI's: " + Arrays.toString(AIMap.keySet().toArray(new String[0])), null);
-      frame.writeToTextBox("Currently using AI: " + name, null);
+      frame.writeToTextBox("AI by name {" + aiName + "} not found.\n", null);
+      frame.writeToTextBox("Currently registered AI's: " + Arrays.toString(AIMap.keySet().toArray(new String[0])) + "\n", null);
+      frame.writeToTextBox("Currently using AI: " + name + "\n\n", null);
       return false;
    }
 }

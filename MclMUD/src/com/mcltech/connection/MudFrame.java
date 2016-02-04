@@ -268,8 +268,8 @@ public class MudFrame
                String[] commands = ai.processCommand(inputText.getText());
                if (commands != null)
                {
-                  String com = String.join(";", commands) + "\n";
-                  writeToTextBox(com, null);
+                  String com = String.join(";", commands);
+                  writeToTextBox(com + "\n", null);
                   for (String command : commands)
                   {
                      controller.write(command + "\n");

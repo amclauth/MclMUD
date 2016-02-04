@@ -110,7 +110,7 @@ public class AnsiParser
             }
             isCarriage = false;
          }
-         else if (b == carriage)
+         if (b == carriage)
          {
             isCarriage = true;
          }

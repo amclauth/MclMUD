@@ -61,7 +61,10 @@ public class MumeAI implements AIInterface
       if (line == null || line.isEmpty())
          return;
       
-      
+      for (AIInterface service : services)
+      {
+         service.trigger(line);
+      }
    }
 
    @Override
