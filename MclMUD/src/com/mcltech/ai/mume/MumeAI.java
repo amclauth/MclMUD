@@ -46,6 +46,7 @@ public class MumeAI implements AIInterface
    {
       if (line == null || line.isEmpty())
          return line;
+      // color -*- as a road and ~*~ as water
       
       String out = line;
       for (AIInterface service : services)

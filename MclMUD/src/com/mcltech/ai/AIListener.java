@@ -37,6 +37,7 @@ public class AIListener implements Runnable
    private AIInterface ai;
    private Map<String,AIInterface> AIMap = new HashMap<>();
    private Pattern percentPattern = Pattern.compile("\\%\\%");
+   private Pattern percentPattern2 = Pattern.compile("\\%\\%\\ ");
 
    public AIListener(MudFrame frame, String name)
    {
@@ -210,11 +211,11 @@ public class AIListener implements Runnable
    
    private String[] handleAlias(String alias, String line)
    {
-      if (line.equals(alias))
+      String[] extras = new String[0];
+      if (!line.equals(alias))
       {
-         return aliases.get(alias);
+         extras = line.substring(alias.length() + 1).trim().split(" ");
       }
-      String[] extras = line.substring(alias.length() + 1).trim().split(" ");
       String[] aliasCommands = aliases.get(alias);
       String[] commands = new String[aliasCommands.length];
       int extraIdx = 0;
@@ -225,10 +226,12 @@ public class AIListener implements Runnable
          {
             if (extraIdx >= extras.length)
             {
-               frame.writeToTextBox("\n***Not enough arguments for alias: " + alias + " -> " + String.join(";",aliasCommands) + "\n\n", null);
-               return null;
+               commands[ii] = percentPattern2.matcher(commands[ii]).replaceAll("");
             }
-            commands[ii] = percentPattern.matcher(commands[ii]).replaceFirst(extras[extraIdx++]);
+            else
+            {
+               commands[ii] = percentPattern.matcher(commands[ii]).replaceFirst(extras[extraIdx++]);
+            }
          }
       }
       for (int ii = extraIdx; ii < extras.length; ii++)

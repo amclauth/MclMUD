@@ -97,6 +97,7 @@ public class MudFrame
    
    public void updateTitle(String title)
    {
+      // TODO this fails when closing down
       Display.getDefault().asyncExec(new Runnable()
       {
          @Override
