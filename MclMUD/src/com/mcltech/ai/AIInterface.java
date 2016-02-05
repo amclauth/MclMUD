@@ -8,7 +8,14 @@ import com.mcltech.base.ServiceInterface;
 
 public interface AIInterface extends ServiceInterface
 {
-   
+   /**
+    * Return these based on what the interface does, so it's easier
+    * (more efficient) to call on only the interfaces needed.
+    * @return
+    */
+   public boolean isFormatter();
+   public boolean isTriggerer();
+   public boolean isCommander();
    /**
     * Format the output line. Return null if it shouldn't be printed.
     * @param line
@@ -24,10 +31,12 @@ public interface AIInterface extends ServiceInterface
    public void trigger(String line);
    
    /**
-    * Process an input line for commands / aliases / etc
+    * This is basically to act as a listener on commands. An example of use would be 
+    * to pass direction commands on to a mapper
+    * or to trigger a timer when a command is given
     * @param line
     * @return true if no other action should be taken, false if the command should
     *         be sent on to the MUD
     */
-   public String command(String line);
+   public boolean command(String command);
 }

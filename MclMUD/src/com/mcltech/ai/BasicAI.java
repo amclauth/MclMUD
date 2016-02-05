@@ -33,9 +33,27 @@ public class BasicAI implements AIInterface
    }
 
    @Override
-   public String command(String line)
+   public boolean command(String command)
    {
-      return line;
+      return true;
+   }
+
+   @Override
+   public boolean isFormatter()
+   {
+      return false;
+   }
+
+   @Override
+   public boolean isTriggerer()
+   {
+      return false;
+   }
+
+   @Override
+   public boolean isCommander()
+   {
+      return false;
    }
 
 }

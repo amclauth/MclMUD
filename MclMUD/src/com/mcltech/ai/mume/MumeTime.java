@@ -242,6 +242,7 @@ public class MumeTime implements AIInterface
       long now = System.currentTimeMillis();
       hour = (int) (((now/1000 - midnight) % (24*60))/60);
       minute = (int) (((now/1000 - midnight) % (24*60)) - hour*60);
+      timeKnown = true;
 //      int timeTillNextHour = 60000 - (int) ((now - midnight*1000) % (24*60*1000) - currentHour*60*1000);
       if (clockTimer != null)
       {
@@ -253,7 +254,6 @@ public class MumeTime implements AIInterface
          @Override
          public void run()
          {
-            timeKnown = true;
             minute++;
             if (minute == 60)
             {
@@ -332,8 +332,26 @@ public class MumeTime implements AIInterface
    }
 
    @Override
-   public String command(String line)
+   public boolean command(String line)
    {
-       return line;
+       return false;
+   }
+
+   @Override
+   public boolean isFormatter()
+   {
+      return false;
+   }
+
+   @Override
+   public boolean isTriggerer()
+   {
+      return true;
+   }
+
+   @Override
+   public boolean isCommander()
+   {
+      return false;
    }
 }

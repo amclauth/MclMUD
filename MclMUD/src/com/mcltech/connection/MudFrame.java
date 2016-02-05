@@ -266,7 +266,7 @@ public class MudFrame
                {
                   addConnection(inputText.getText());
                }
-               String[] commands = ai.processCommand(inputText.getText());
+               List<String> commands = ai.processCommand(inputText.getText());
                if (commands != null)
                {
                   String com = String.join(";", commands);

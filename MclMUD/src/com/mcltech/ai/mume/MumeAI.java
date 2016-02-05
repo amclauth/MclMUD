@@ -21,6 +21,7 @@ public class MumeAI implements AIInterface
       this.frame = frame;
       services = new ArrayList<>();
       services.add(new MumeTime(frame));
+      services.add(new MumeFormatter());
    }
    
    @Override
@@ -51,7 +52,8 @@ public class MumeAI implements AIInterface
       String out = line;
       for (AIInterface service : services)
       {
-         out = service.format(line, ranges);
+         if (service.isFormatter())
+            out = service.format(line, ranges);
       }
       return out;
    }
@@ -64,14 +66,39 @@ public class MumeAI implements AIInterface
       
       for (AIInterface service : services)
       {
-         service.trigger(line);
+         if (service.isTriggerer())
+            service.trigger(line);
       }
    }
 
    @Override
-   public String command(String line)
+   public boolean command(String command)
    {
-      return line;
+      boolean retval = true;
+      for (AIInterface service : services)
+      {
+         if (service.isFormatter())
+            retval &= service.command(command);
+      }
+      return retval;
+   }
+
+   @Override
+   public boolean isFormatter()
+   {
+      return true;
+   }
+
+   @Override
+   public boolean isTriggerer()
+   {
+      return true;
+   }
+
+   @Override
+   public boolean isCommander()
+   {
+      return false;
    }
    
    
