@@ -11,25 +11,6 @@
   <property name="lin64.classes.dir" value="${build.dir}/classes.lin64"/>
   <property name="osx.classes.dir" value="${build.dir}/classes.osx"/>
 
-
-  <!-- filesets -->
-  <fileset id="baseJars" dir=".">
-    <filename name="lib/*.jar"/>
-  </fileset>
-
-  <fileset id="baseWin32Jars" dir=".">
-    <filename name="lib/swt/swt-win32-x86.jar"/>
-  </fileset>
-  <fileset id="baseWin64Jars" dir=".">
-    <filename name="lib/swt/swt-win32-x86_64.jar"/>
-  </fileset>
-  <fileset id="baseLin32Jars" dir=".">
-    <filename name="lib/swt/swt-linux-x86.jar"/>
-  </fileset>
-  <fileset id="baseLin64Jars" dir=".">
-    <filename name="lib/swt/swt-linux-x86_64.jar"/>
-  </fileset>
-
   <!-- paths for classpath -->
   <path id="lin32Classpath">
      <fileset dir=".">
@@ -154,7 +135,7 @@
     <jar destfile="${jar.dir}/MclMUDClient.lin64.jar" basedir="${lin64.classes.dir}" filesetmanifest="skip">
       <zipgroupfileset dir=".">
         <include name="lib/*.jar"/>
-        <include name="lib/swt/swt-lin32-x86_64.jar"/>
+        <include name="lib/swt/swt-linux-x86_64.jar"/>
       </zipgroupfileset>
       <manifest>
         <attribute name="Main-Class" value="com.mcltech.base.MclMUDMain"/>
@@ -168,7 +149,7 @@
     <jar destfile="${jar.dir}/MclMUDClient.lin32.jar" basedir="${lin32.classes.dir}" filesetmanifest="skip">
       <zipgroupfileset dir=".">
         <include name="lib/*.jar"/>
-        <include name="lib/swt/swt-lin32-x86.jar"/>
+        <include name="lib/swt/swt-linux-x86.jar"/>
       </zipgroupfileset>
       <manifest>
         <attribute name="Main-Class" value="com.mcltech.base.MclMUDMain"/>
