@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="MclMUDClient" default="all" basedir=".">
+
+  <!-- Basic directory names -->
+  <property name="src.dir" value="src"/>
+  <property name="build.dir" value="build"/>
+  <property name="jar.dir" value="bin"/>
+  <property name="win32.classes.dir" value="${build.dir}/classes.win32"/>
+  <property name="win64.classes.dir" value="${build.dir}/classes.win64"/>
+  <property name="lin32.classes.dir" value="${build.dir}/classes.lin32"/>
+  <property name="lin64.classes.dir" value="${build.dir}/classes.lin64"/>
+  <property name="osx.classes.dir" value="${build.dir}/classes.osx"/>
+
+
+  <!-- filesets -->
+  <fileset id="baseJars" dir=".">
+    <filename name="lib/*.jar"/>
+  </fileset>
+
+  <fileset id="baseWin32Jars" dir=".">
+    <filename name="lib/swt/swt-win32-x86.jar"/>
+  </fileset>
+  <fileset id="baseWin64Jars" dir=".">
+    <filename name="lib/swt/swt-win32-x86_64.jar"/>
+  </fileset>
+  <fileset id="baseLin32Jars" dir=".">
+    <filename name="lib/swt/swt-linux-x86.jar"/>
+  </fileset>
+  <fileset id="baseLin64Jars" dir=".">
+    <filename name="lib/swt/swt-linux-x86_64.jar"/>
+  </fileset>
+
+  <!-- paths for classpath -->
+  <path id="lin32Classpath">
+     <fileset dir=".">
+       <include name="lib/*.jar"/>
+       <include name="lib/swt/swt-linux-x86.jar"/>
+     </fileset>
+  </path>
+  <pathconvert property="dist.classpath" pathsep=" ">
+    <path refid="lin32Classpath"/>
+    <mapper>
+      <chainedmapper>
+        <flattenmapper/>
+        <globmapper from="*.jar" to ="lib/*.jar"/>
+      </chainedmapper>
+    </mapper>
+  </pathconvert>
+
+  <path id="lin64Classpath">
+     <fileset dir=".">
+       <include name="lib/*.jar"/>
+       <include name="lib/swt/swt-linux-x86_64.jar"/>
+     </fileset>
+  </path>
+  <pathconvert property="dist.classpath" pathsep=" ">
+    <path refid="lin64Classpath"/>
+    <mapper>
+      <chainedmapper>
+        <flattenmapper/>
+        <globmapper from="*.jar" to ="lib/*.jar"/>
+      </chainedmapper>
+    </mapper>
+  </pathconvert>
+
+  <path id="win32Classpath">
+     <fileset dir=".">
+       <include name="lib/*.jar"/>
+       <include name="lib/swt/swt-win32-x86.jar"/>
+     </fileset>
+  </path>
+  <pathconvert property="dist.classpath" pathsep=" ">
+    <path refid="win32Classpath"/>
+    <mapper>
+      <chainedmapper>
+        <flattenmapper/>
+        <globmapper from="*.jar" to ="lib/*.jar"/>
+      </chainedmapper>
+    </mapper>
+  </pathconvert>
+
+  <path id="win64Classpath">
+     <fileset dir=".">
+       <include name="lib/*.jar"/>
+       <include name="lib/swt/swt-win32-x86_64.jar"/>
+     </fileset>
+  </path>
+  <pathconvert property="dist.classpath" pathsep=" ">
+    <path refid="win64Classpath"/>
+    <mapper>
+      <chainedmapper>
+        <flattenmapper/>
+        <globmapper from="*.jar" to ="lib/*.jar"/>
+      </chainedmapper>
+    </mapper>
+  </pathconvert>
+
+  <path id="osxClasspath">
+     <fileset dir=".">
+       <include name="lib/*.jar"/>
+       <include name="lib/swt/swt.jar"/>
+     </fileset>
+  </path>
+  <pathconvert property="dist.classpath" pathsep=" ">
+    <path refid="osxClasspath"/>
+    <mapper>
+      <chainedmapper>
+        <flattenmapper/>
+        <globmapper from="*.jar" to ="lib/*.jar"/>
+      </chainedmapper>
+    </mapper>
+  </pathconvert>
+
+
+  <!-- targets: clean -->
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+  </target>
+
+  <target name="distclean">
+    <delete dir="${build.dir}"/>
+    <delete dir="${jar.dir}"/>
+  </target>
+        
+  <!-- targets: javac -->
+  <target name="buildLin32" description="Build Lin32 files">
+    <mkdir dir="${lin32.classes.dir}"/>
+    <javac includeantruntime="false" srcdir="${src.dir}" destdir="${lin32.classes.dir}" classpathref="lin32Classpath"/>
+  </target>
+
+  <target name="buildLin64" description="Build Lin64 files">
+    <mkdir dir="${lin64.classes.dir}"/>
+    <javac includeantruntime="false" srcdir="${src.dir}" destdir="${lin64.classes.dir}" classpathref="lin64Classpath"/>
+  </target>
+
+  <target name="buildWin32" description="Build Win32 files">
+    <mkdir dir="${win32.classes.dir}"/>
+    <javac includeantruntime="false" srcdir="${src.dir}" destdir="${win32.classes.dir}" classpathref="win32Classpath"/>
+  </target>
+
+  <target name="buildWin64" description="Build Win64 files">
+    <mkdir dir="${win64.classes.dir}"/>
+    <javac includeantruntime="false" srcdir="${src.dir}" destdir="${win64.classes.dir}" classpathref="win64Classpath"/>
+  </target>
+
+  <target name="buildOsx" description="Build OSX files">
+    <mkdir dir="${osx.classes.dir}"/>
+    <javac includeantruntime="false" srcdir="${src.dir}" destdir="${osx.classes.dir}" classpathref="osxClasspath"/>
+  </target>
+
+  <!-- targets: jar -->
+  <target name="lin64Jar" description="Build Lin64 jar" depends="buildLin64">
+    <mkdir dir="${jar.dir}"/>
+    <jar destfile="${jar.dir}/MclMUDClient.lin64.jar" basedir="${lin64.classes.dir}" filesetmanifest="skip">
+      <zipgroupfileset dir=".">
+        <include name="lib/*.jar"/>
+        <include name="lib/swt/swt-lin32-x86_64.jar"/>
+      </zipgroupfileset>
+      <manifest>
+        <attribute name="Main-Class" value="com.mcltech.base.MclMUDMain"/>
+        <attribute name="Class-Path" value="dist.classpath"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="lin32Jar" description="Build Lin32 jar" depends="buildLin32">
+    <mkdir dir="${jar.dir}"/>
+    <jar destfile="${jar.dir}/MclMUDClient.lin32.jar" basedir="${lin32.classes.dir}" filesetmanifest="skip">
+      <zipgroupfileset dir=".">
+        <include name="lib/*.jar"/>
+        <include name="lib/swt/swt-lin32-x86.jar"/>
+      </zipgroupfileset>
+      <manifest>
+        <attribute name="Main-Class" value="com.mcltech.base.MclMUDMain"/>
+        <attribute name="Class-Path" value="dist.classpath"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="win64Jar" description="Build Win64 jar" depends="buildWin64">
+    <mkdir dir="${jar.dir}"/>
+    <jar destfile="${jar.dir}/MclMUDClient.win64.jar" basedir="${win64.classes.dir}" filesetmanifest="skip">
+      <zipgroupfileset dir=".">
+        <include name="lib/*.jar"/>
+        <include name="lib/swt/swt-win32-x86_64.jar"/>
+      </zipgroupfileset>
+      <manifest>
+        <attribute name="Main-Class" value="com.mcltech.base.MclMUDMain"/>
+        <attribute name="Class-Path" value="dist.classpath"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="win32Jar" description="Build Win32 jar" depends="buildWin32">
+    <mkdir dir="${jar.dir}"/>
+    <jar destfile="${jar.dir}/MclMUDClient.win32.jar" basedir="${win32.classes.dir}" filesetmanifest="skip">
+      <zipgroupfileset dir=".">
+        <include name="lib/*.jar"/>
+        <include name="lib/swt/swt-win32-x86.jar"/>
+      </zipgroupfileset>
+      <manifest>
+        <attribute name="Main-Class" value="com.mcltech.base.MclMUDMain"/>
+        <attribute name="Class-Path" value="dist.classpath"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="osxJar" description="Build OSX jar" depends="buildOsx">
+    <mkdir dir="${jar.dir}"/>
+    <jar destfile="${jar.dir}/MclMUDClient.osx.jar" basedir="${osx.classes.dir}" filesetmanifest="skip">
+      <zipgroupfileset dir=".">
+        <include name="lib/*.jar"/>
+        <include name="lib/swt/swt.jar"/>
+      </zipgroupfileset>
+      <manifest>
+        <attribute name="Main-Class" value="com.mcltech.base.MclMUDMain"/>
+        <attribute name="Class-Path" value="dist.classpath"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <!-- target: all -->
+  <target name="all" description="Build all jars" depends="osxJar,win32Jar,win64Jar,lin32Jar,lin64Jar"/>
+
+</project>
