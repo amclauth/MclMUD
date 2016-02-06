@@ -207,6 +207,7 @@ public class MudFrame
          if (!display.readAndDispatch())
             display.sleep();
       }
+      log.stop();
       display.dispose();
       stop();
    }
