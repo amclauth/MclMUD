@@ -15,14 +15,16 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 /**
- * A simple singleton logger that won't block and can take multi-threaded input and
- * writes in its own time to the log
+ * A simple singleton logger that won't block and can take multi-threaded input and writes in its own time to
+ * the log
+ * 
  * @author andymac
  *
  */
 public class MudLogger implements Runnable
 {
    private Thread writer;
+
    // singleton class holder pattern
    private static final class holder
    {
@@ -37,7 +39,7 @@ public class MudLogger implements Runnable
    MudLogger()
    {
       queue = new LinkedBlockingQueue<>();
-      
+
       // make sure the folders exist
       File logFolder = new File("logs");
       File configFolder = new File("config");
@@ -49,7 +51,7 @@ public class MudLogger implements Runnable
       {
          configFolder.mkdirs();
       }
-      
+
       // set up the logger
       Handler handler = null;
       try
@@ -66,14 +68,15 @@ public class MudLogger implements Runnable
 
       handler.setLevel(Level.ALL);
       Logger.getLogger("").addHandler(handler);
-//      Logger.getLogger("").setUseParentHandlers(false);
-      
+      Logger.getLogger("").setUseParentHandlers(false);
+
       writer = new Thread(this);
       writer.start();
    }
 
    /**
     * A holder class to hold the normal logging info for the queue
+    * 
     * @author andymac
     */
    private class LogInfo
@@ -96,6 +99,7 @@ public class MudLogger implements Runnable
 
    /**
     * Add this to be logged
+    * 
     * @param level
     * @param message
     */
@@ -106,6 +110,7 @@ public class MudLogger implements Runnable
 
    /**
     * Add this to be logged
+    * 
     * @param level
     * @param message
     * @param thrown
@@ -114,7 +119,7 @@ public class MudLogger implements Runnable
    {
       queue.add(new LogInfo(level, message, thrown));
    }
-   
+
    /**
     * Stop writing the log. Shut down the thread.
     */
@@ -155,14 +160,14 @@ public class MudLogger implements Runnable
       }
       while (!interrupted);
    }
-   
+
    private final class OneLineFormatter extends Formatter
    {
       private final String LINE_SEPARATOR = System.getProperty("line.separator");
-      
+
       public OneLineFormatter()
       {
-         
+
       }
 
       @Override
@@ -170,28 +175,29 @@ public class MudLogger implements Runnable
       {
          StringBuilder sb = new StringBuilder();
 
-         sb.append(new Date(record.getMillis()))
-             .append(":")
-             .append(record.getLevel().getLocalizedName())
-             .append(": ")
-             .append(formatMessage(record));
+         sb.append(new Date(record.getMillis())).append(":").append(record.getLevel().getLocalizedName())
+               .append(": ").append(formatMessage(record));
          if (!record.getMessage().endsWith("\n"))
-             sb.append(LINE_SEPARATOR);
+            sb.append(LINE_SEPARATOR);
 
-         if (record.getThrown() != null) {
-             try {
-                 StringWriter sw = new StringWriter();
-                 PrintWriter pw = new PrintWriter(sw);
-                 record.getThrown().printStackTrace(pw);
-                 pw.close();
-                 sb.append(sw.toString());
-             } catch (@SuppressWarnings("unused") Exception ex) {
-                 // ignore
-             }
+         if (record.getThrown() != null)
+         {
+            StringWriter sw = new StringWriter();
+            try (PrintWriter pw = new PrintWriter (sw))
+            {
+               record.getThrown().printStackTrace(pw);
+               pw.close();
+               sb.append(sw.toString());
+            }
+            catch (@SuppressWarnings("unused")
+            Exception ex)
+            {
+               // ignore
+            }
          }
 
          return sb.toString();
       }
-      
+
    }
 }

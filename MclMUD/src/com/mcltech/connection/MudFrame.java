@@ -45,13 +45,13 @@ public class MudFrame
    Controller controller;
    AIListener ai;
    List<String> commandStack = new LinkedList<>();
-   private final static int COMMAND_STACK_SIZE = 20;
+   static int COMMAND_STACK_SIZE;
    int commandStackIdx = -1;
    public static Color[] colors = new Color[10];
 
    public MudFrame()
    {
-      
+
    }
 
    /**
@@ -70,7 +70,7 @@ public class MudFrame
 
       if (display.isDisposed())
          return;
-      
+
       display.asyncExec(new Runnable()
       {
          @Override
@@ -103,7 +103,7 @@ public class MudFrame
          }
       });
    }
-   
+
    public void updateTitle(String title)
    {
       // TODO this sometimes fails when closing down ... might check that display is active
@@ -125,6 +125,23 @@ public class MudFrame
     */
    public void init()
    {
+      try
+      {
+         if (Configger.getProperty("COMMANDSTACKSIZE", "").equals(""))
+         {
+            Configger.setProperty("COMMANDSTACKSIZE", "20");
+            COMMAND_STACK_SIZE = 20;
+         }
+         else
+         {
+            COMMAND_STACK_SIZE = Integer.valueOf(Configger.getProperty("COMMANDSTACKSIZE", "20")).intValue();
+         }
+      }
+      catch (@SuppressWarnings("unused") NumberFormatException e)
+      {
+         log.add(Level.WARNING, "Couldn't convert COMMANDSTACKSIZE to an integer from the config file.");
+         COMMAND_STACK_SIZE = 20;
+      }
       display = new Display();
       // set up the system colors
       colors[0] = display.getSystemColor(SWT.COLOR_BLACK);
@@ -145,8 +162,8 @@ public class MudFrame
       createMenu();
       createOutputScreen();
       createInputScreen();
-      
-      ai = new AIListener(this,"Basic");
+
+      ai = new AIListener(this, "Basic");
       AnsiParser.init(display, this);
       controller = new Controller(this);
       controller.init();
@@ -274,7 +291,8 @@ public class MudFrame
       gridData.heightHint = 50;
       inputText = new Text(shell, SWT.SINGLE | SWT.BORDER | SWT.WRAP);
       inputText.setLayoutData(gridData);
-      inputText.addKeyListener(new KeyListener() {
+      inputText.addKeyListener(new KeyListener()
+      {
 
          @Override
          public void keyPressed(KeyEvent e)
@@ -283,7 +301,7 @@ public class MudFrame
             {
                inputText.setText("");
             }
-            
+
          }
 
          @Override
@@ -300,7 +318,7 @@ public class MudFrame
             }
             else if (e.keyCode == SWT.ARROW_DOWN)
             {
-               if (commandStackIdx < commandStack.size()-1)
+               if (commandStackIdx < commandStack.size() - 1)
                {
                   commandStackIdx++;
                   inputText.setText(commandStack.get(commandStackIdx));
@@ -318,14 +336,14 @@ public class MudFrame
             if (e.detail == SWT.TRAVERSE_RETURN)
             {
                String input = inputText.getText().trim();
-               
+
                commandStack.add(input);
                while (commandStack.size() > COMMAND_STACK_SIZE)
                {
                   commandStack.remove(0);
                }
-               commandStackIdx = commandStack.size()-1;
-               
+               commandStackIdx = commandStack.size() - 1;
+
                if (!controller.isConnected())
                {
                   addConnection(input);
@@ -401,7 +419,7 @@ public class MudFrame
             }
          });
       }
-      
+
       @SuppressWarnings("unused")
       MenuItem menuItem = new MenuItem(connectionMenu, SWT.SEPARATOR);
 
@@ -422,6 +440,7 @@ public class MudFrame
 
    /**
     * Add a connection when the user is disconnected and enters a name:host:port command
+    * 
     * @param line
     */
    void addConnection(String line)
@@ -448,8 +467,8 @@ public class MudFrame
 
          writeToTextBox("\nAdding connection name{" + name + "} address{" + con + "} port{" + pString + "}\n",
                null);
-         log.add(Level.INFO,"Adding connection name{" + name + "} address{" + con + "} port{" + port + "}");
-         
+         log.add(Level.INFO, "Adding connection name{" + name + "} address{" + con + "} port{" + port + "}");
+
          String muds = Configger.getProperty("MUDS", "");
          if (Configger.getProperty(name, "").equals(""))
          {
@@ -479,9 +498,10 @@ public class MudFrame
          return;
       }
    }
-   
+
    /**
     * Get the listener for this connection
+    * 
     * @return
     */
    public AIListener getListener()
