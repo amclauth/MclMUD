@@ -3,14 +3,18 @@ package com.mcltech.connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -35,15 +39,19 @@ public class MudFrame
 {
    Shell shell;
    private Display display;
-   private static final MudLogger log = MudLogger.getInstance();
+   static final MudLogger log = MudLogger.getInstance();
    StyledText outputText;
    Text inputText;
    Controller controller;
    AIListener ai;
+   List<String> commandStack = new LinkedList<>();
+   private final static int COMMAND_STACK_SIZE = 20;
+   int commandStackIdx = -1;
+   public static Color[] colors = new Color[10];
 
    public MudFrame()
    {
-
+      
    }
 
    /**
@@ -70,6 +78,7 @@ public class MudFrame
          {
             int caret = outputText.getCharCount();
             outputText.append(line);
+            log.add(Level.INFO, line);
             for (StyleRange range : rangeCopy)
             {
                range.start += caret;
@@ -97,7 +106,7 @@ public class MudFrame
    
    public void updateTitle(String title)
    {
-      // TODO this fails when closing down
+      // TODO this sometimes fails when closing down ... might check that display is active
       Display.getDefault().asyncExec(new Runnable()
       {
          @Override
@@ -117,6 +126,16 @@ public class MudFrame
    public void init()
    {
       display = new Display();
+      // set up the system colors
+      colors[0] = display.getSystemColor(SWT.COLOR_BLACK);
+      colors[1] = display.getSystemColor(SWT.COLOR_RED);
+      colors[2] = display.getSystemColor(SWT.COLOR_GREEN);
+      colors[3] = display.getSystemColor(SWT.COLOR_YELLOW);
+      colors[4] = display.getSystemColor(SWT.COLOR_BLUE);
+      colors[5] = display.getSystemColor(SWT.COLOR_MAGENTA);
+      colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
+      colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
+      colors[8] = display.getSystemColor(SWT.COLOR_GRAY);
       shell = new Shell(display);
       GridLayout gridLayout = new GridLayout();
       gridLayout.numColumns = 1;
@@ -254,6 +273,41 @@ public class MudFrame
       gridData.heightHint = 50;
       inputText = new Text(shell, SWT.SINGLE | SWT.BORDER | SWT.WRAP);
       inputText.setLayoutData(gridData);
+      inputText.addKeyListener(new KeyListener() {
+
+         @Override
+         public void keyPressed(KeyEvent e)
+         {
+            if ((e.stateMask & SWT.CTRL) != 0 && (e.keyCode == 117 || e.keyCode == 108))
+            {
+               inputText.setText("");
+            }
+            
+         }
+
+         @Override
+         public void keyReleased(KeyEvent e)
+         {
+            if (e.keyCode == SWT.ARROW_UP)
+            {
+               if (commandStackIdx > 0)
+               {
+                  commandStackIdx--;
+                  inputText.setText(commandStack.get(commandStackIdx));
+                  inputText.selectAll();
+               }
+            }
+            else if (e.keyCode == SWT.ARROW_DOWN)
+            {
+               if (commandStackIdx < commandStack.size()-1)
+               {
+                  commandStackIdx++;
+                  inputText.setText(commandStack.get(commandStackIdx));
+                  inputText.selectAll();
+               }
+            }
+         }
+      });
       // handle the user pressing enter as the way to send commands
       inputText.addListener(SWT.Traverse, new Listener()
       {
@@ -262,11 +316,22 @@ public class MudFrame
          {
             if (e.detail == SWT.TRAVERSE_RETURN)
             {
+               String input = inputText.getText().trim();
+               
+               commandStack.add(input);
+               while (commandStack.size() > COMMAND_STACK_SIZE)
+               {
+                  commandStack.remove(0);
+               }
+               commandStackIdx = commandStack.size()-1;
+               
                if (!controller.isConnected())
                {
-                  addConnection(inputText.getText());
+                  addConnection(input);
+                  inputText.selectAll();
+                  return;
                }
-               List<String> commands = ai.processCommand(inputText.getText());
+               List<String> commands = ai.processCommand(input);
                if (commands != null)
                {
                   String com = String.join(";", commands);
@@ -274,6 +339,7 @@ public class MudFrame
                   for (String command : commands)
                   {
                      controller.write(command + "\n");
+                     log.add(Level.INFO, command);
                   }
                }
                // keep the text there and selected, so just pressing enter

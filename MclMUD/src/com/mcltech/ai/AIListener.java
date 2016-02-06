@@ -220,42 +220,6 @@ public class AIListener implements Runnable
       }
    }
    
-//   private List<String> handleAlias(String line)
-//   {
-//      List<String> commands = expandAlias(line);
-//      
-//      String[] extras = new String[0];
-//      if (!line.equals(alias))
-//      {
-//         extras = line.substring(alias.length() + 1).trim().split(" ");
-//      }
-//      String[] aliasCommands = aliases.get(alias);
-//      String[] commands = new String[aliasCommands.length];
-//      int extraIdx = 0;
-//      for (int ii = 0; ii < commands.length; ii++)
-//      {
-//         commands[ii] = aliasCommands[ii];
-//         while (commands[ii].contains("%%"))
-//         {
-//            if (extraIdx >= extras.length)
-//            {
-//               commands[ii] = percentPattern2.matcher(commands[ii]).replaceAll("");
-//            }
-//            else
-//            {
-//               commands[ii] = percentPattern.matcher(commands[ii]).replaceFirst(extras[extraIdx++]);
-//            }
-//         }
-//      }
-//      for (int ii = extraIdx; ii < extras.length; ii++)
-//      {
-//         commands[commands.length - 1] += " " + extras[ii];
-//      }
-//      return commands;
-//      
-//      return commands;
-//   }
-
    private List<String> expandAlias(String command)
    {
       String[] words = command.split("\\s+");
@@ -312,7 +276,7 @@ public class AIListener implements Runnable
    {
       // handle empty
       List<String> commands = new ArrayList<>();
-      if (input.trim().isEmpty())
+      if (input.isEmpty())
       {
          commands.add("");
          return commands;
@@ -321,7 +285,7 @@ public class AIListener implements Runnable
       // handle alias and loadAI
       if (input.startsWith("alias"))
       {
-         if (input.trim().equals("alias"))
+         if (input.equals("alias"))
          {
             StringBuilder buf = new StringBuilder();
             buf.append("\n\nAliases:\n");
@@ -336,7 +300,7 @@ public class AIListener implements Runnable
          }
          else
          {
-            addAlias(input.trim().substring(6));
+            addAlias(input.substring(6));
          }
          return null;
       }

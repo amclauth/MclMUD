@@ -74,11 +74,11 @@ public class MumeAI implements AIInterface
    @Override
    public boolean command(String command)
    {
-      boolean retval = true;
+      boolean retval = false;
       for (AIInterface service : services)
       {
          if (service.isFormatter())
-            retval &= service.command(command);
+            retval |= service.command(command);
       }
       return retval;
    }
@@ -98,7 +98,7 @@ public class MumeAI implements AIInterface
    @Override
    public boolean isCommander()
    {
-      return false;
+      return true;
    }
    
    

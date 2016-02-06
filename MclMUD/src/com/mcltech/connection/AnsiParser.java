@@ -7,7 +7,6 @@ import java.util.logging.Level;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
-import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
 
 import com.mcltech.base.MudLogger;
@@ -22,7 +21,6 @@ import com.mcltech.base.MudLogger;
 public class AnsiParser
 {
    private static final MudLogger log = MudLogger.getInstance();
-   public static Color[] colors = new Color[10];
 
    private static final byte esc = (byte) 0x1B;
    private static final byte ctr = (byte) 0x5B;
@@ -52,16 +50,6 @@ public class AnsiParser
     */
    public static void init(Display display, MudFrame mudframe)
    {
-      // set up the system colors
-      colors[0] = display.getSystemColor(SWT.COLOR_BLACK);
-      colors[1] = display.getSystemColor(SWT.COLOR_RED);
-      colors[2] = display.getSystemColor(SWT.COLOR_GREEN);
-      colors[3] = display.getSystemColor(SWT.COLOR_YELLOW);
-      colors[4] = display.getSystemColor(SWT.COLOR_BLUE);
-      colors[5] = display.getSystemColor(SWT.COLOR_MAGENTA);
-      colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
-      colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
-      
       continuedSequences = new ArrayList<>();
       inEscape = false;
       inControl = false;
@@ -247,7 +235,6 @@ public class AnsiParser
          {
             if (r.length == -1)
             {
-               // TODO ... these should continue across the lines
                r.length = lineBuffer.length() - r.start - 1;
             }
          }
@@ -316,7 +303,7 @@ public class AnsiParser
          case 35:
          case 36:
          case 37:
-            range.foreground = colors[sequence - 30];
+            range.foreground = MudFrame.colors[sequence - 30];
             break;
          case 40:
          case 41:
@@ -326,7 +313,7 @@ public class AnsiParser
          case 45:
          case 46:
          case 47:
-            range.background = colors[sequence - 40];
+            range.background = MudFrame.colors[sequence - 40];
             break;
          default:
             return; // do nothing
