@@ -74,6 +74,12 @@ public class AIListener implements Runnable
    {
       int idx = aliasString.indexOf(':');
       
+      if (idx <= 0 && aliasString.length() > 0 && aliases.containsKey(aliasString))
+      {
+         MudFrame.writeToTextBox("\n  " + aliasString + " => " + String.join(";",aliases.get(aliasString)) + "\n",null);
+         return true;
+      }
+      
       if (idx <= 0)
       {
          log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString
@@ -252,6 +258,8 @@ public class AIListener implements Runnable
                c = percentPattern.matcher(c).replaceFirst(words[extraIdx++]);
             }
          }
+         while (extraIdx < words.length)
+            c += " " + words[extraIdx++];
          commands.addAll(expandAlias(c));
       }
       

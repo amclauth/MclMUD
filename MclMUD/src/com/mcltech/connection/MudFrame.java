@@ -48,6 +48,7 @@ public class MudFrame
    static int COMMAND_STACK_SIZE;
    int commandStackIdx = -1;
    public static Color[] colors = new Color[10];
+   int fontSize = 12;
 
    public MudFrame()
    {
@@ -153,6 +154,20 @@ public class MudFrame
       colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
       colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
       colors[8] = display.getSystemColor(SWT.COLOR_DARK_GREEN);
+      
+      try {
+         int newFontSize = Integer.valueOf(Configger.getProperty("FONTSIZE", "12")).intValue();
+         if (newFontSize != fontSize)
+         {
+            fontSize = newFontSize;
+            Configger.setProperty("FONTSIZE", fontSize+"");
+         }
+      }
+      catch (@SuppressWarnings("unused") NumberFormatException e)
+      {
+         log.add(Level.INFO, "Couldn't get font size from configger");
+      }
+      
       shell = new Shell(display);
       GridLayout gridLayout = new GridLayout();
       gridLayout.numColumns = 1;
@@ -236,6 +251,25 @@ public class MudFrame
    {
       ai.deregister();
       controller.disconnect();
+   }
+   
+   /**
+    * Increase or decrease the fontsize in steps
+    * @param increase
+    */
+   void setFontSize(int increase)
+   {
+      if (increase == 0)
+         return;
+      fontSize += increase;
+      if (fontSize < 1)
+         fontSize = 1;
+      Configger.setProperty("FONTSIZE", fontSize+"");
+      Font mono = new Font(display, "Courier", fontSize, SWT.NONE);
+      outputText.setFont(mono);
+      inputText.setFont(mono);
+      outputText.redraw();
+      inputText.redraw();
    }
 
    /**
@@ -438,6 +472,35 @@ public class MudFrame
          public void widgetSelected(SelectionEvent e)
          {
             controller.disconnect();
+         }
+      });
+      
+      // layout main item
+      MenuItem layoutMenuItem = new MenuItem(menuBar, SWT.CASCADE);
+      layoutMenuItem.setText("&Layout");
+
+      Menu layoutMenu = new Menu(shell, SWT.DROP_DOWN);
+      layoutMenuItem.setMenu(layoutMenu);
+      
+      MenuItem fontIncItem = new MenuItem(layoutMenu, SWT.PUSH);
+      fontIncItem.setText("&Increase Font");
+      fontIncItem.addSelectionListener(new SelectionAdapter()
+      {
+         @Override
+         public void widgetSelected(SelectionEvent e)
+         {
+            setFontSize(1);
+         }
+      });
+      
+      MenuItem fontDecItem = new MenuItem(layoutMenu, SWT.PUSH);
+      fontDecItem.setText("&Decrease Font");
+      fontDecItem.addSelectionListener(new SelectionAdapter()
+      {
+         @Override
+         public void widgetSelected(SelectionEvent e)
+         {
+            setFontSize(-1);
          }
       });
 

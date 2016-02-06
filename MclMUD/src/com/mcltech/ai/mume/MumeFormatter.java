@@ -20,9 +20,9 @@ public class MumeFormatter implements AIInterface
    @Override
    public String format(String line, List<StyleRange> ranges)
    {
+      // color the exits
       if (line.startsWith("Exits: "))
       {
-
          Matcher m = null;
          int start = -1;
          if (returnDirPattern != null)
