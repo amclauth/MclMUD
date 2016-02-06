@@ -39,7 +39,6 @@ public class AnsiParser
    private static int sequence;
    static List<StyleRange> ranges;
    private static int lbIdx;
-   private static MudFrame frame;
 
    static String lineBuffer;
 
@@ -48,7 +47,7 @@ public class AnsiParser
     * @param display
     * @param mudframe
     */
-   public static void init(Display display, MudFrame mudframe)
+   public static void init(Display display)
    {
       continuedSequences = new ArrayList<>();
       inEscape = false;
@@ -58,7 +57,6 @@ public class AnsiParser
       ranges = new ArrayList<>();
       lineBuffer = "";
       lbIdx = 0;
-      frame = mudframe;
    }
 
    /**
@@ -219,7 +217,7 @@ public class AnsiParser
    private static void processString()
    {
       // send the string to the listeners
-      lineBuffer = frame.getListener().processOutput(lineBuffer, ranges);
+      lineBuffer = MudFrame.getListener().processOutput(lineBuffer, ranges);
       
       // formatters could choose not to print this string by sending null back
       if (lineBuffer == null)
@@ -241,7 +239,7 @@ public class AnsiParser
       }
 
       // and write
-      frame.writeToTextBox(lineBuffer, ranges);
+      MudFrame.writeToTextBox(lineBuffer, ranges);
 
       // reset the line buffer and the ranges. We have the option to continue with
       // the "continuedSequnces" here, but I'm currently opting to end all sequences

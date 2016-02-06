@@ -25,7 +25,7 @@ public interface AIInterface extends ServiceInterface
    public String format(String line, List<StyleRange> ranges);
    
    /**
-    * Process any triggers or scripts based on an output line
+    * Process any triggers or scripts based on an output line. Line comes in trimmed.
     * @param line
     */
    public void trigger(String line);

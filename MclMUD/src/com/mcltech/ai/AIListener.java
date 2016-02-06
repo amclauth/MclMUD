@@ -35,7 +35,6 @@ public class AIListener implements Runnable
    protected boolean listening = false;
    private String name;
    private Map<String, String[]> aliases;
-   private MudFrame frame;
    private Thread poller;
    private AIInterface ai;
    private TreeMap<String, AIInterface> AIMap = new TreeMap<>(new DescendingWordLengthComparator());
@@ -49,7 +48,6 @@ public class AIListener implements Runnable
 
       lineQueue = new LinkedBlockingQueue<>();
       ai = new BasicAI();
-      this.frame = frame;
       this.name = name;
       loadAliases();
       poller = new Thread(this);
@@ -70,33 +68,42 @@ public class AIListener implements Runnable
     * Add an alias string
     * 
     * @param aliasString in the form: name:command1;command2;...
-    * @return
+    * @return true if action performed of some kind, false on error
     */
    protected boolean addAlias(String aliasString)
    {
       int idx = aliasString.indexOf(':');
-      if (idx <= 0 || idx == aliasString.length() - 1)
+      
+      if (idx <= 0)
       {
          log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString
                + "} should be in format \"alias name:command;command;command;...\"");
-         frame.writeToTextBox("Alias is improperly formatted. {" + aliasString
+         MudFrame.writeToTextBox("Alias is improperly formatted. {" + aliasString
                + "} should be in format \"alias name:command;command;command;...\"\n", null);
          return false;
       }
+
       String alias = aliasString.substring(0, idx);
+      if (idx == aliasString.length()-1 && idx > 0)
+      {
+         // clear alias
+         aliases.remove(alias);
+         return true;
+      }
+      
       String[] commands = aliasString.substring(idx + 1).split(";");
       // double check
       if (commands.length == 0 || alias.length() == 0)
       {
          log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString
                + "} should be in format \"alias name:command;command;command;...\"");
-         frame.writeToTextBox("Alias is improperly formatted. {" + aliasString
+         MudFrame.writeToTextBox("Alias is improperly formatted. {" + aliasString
                + "} should be in format \"alias name:command;command;command;...\"\n", null);
          return false;
       }
       aliases.put(alias, commands);
       writeAliases();
-      frame.writeToTextBox("\nAdded alias " + alias + " -> " + String.join(";", commands) + "\n", null);
+      MudFrame.writeToTextBox("\nAdded alias " + alias + " -> " + String.join(";", commands) + "\n", null);
       return true;
    }
 
@@ -132,7 +139,7 @@ public class AIListener implements Runnable
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Couldn't write alias file {" + aliasFile.getAbsolutePath() + "}", e);
-         frame.writeToTextBox("Couldn't write alias file {" + aliasFile.getAbsolutePath() + "}", null);
+         MudFrame.writeToTextBox("Couldn't write alias file {" + aliasFile.getAbsolutePath() + "}", null);
       }
    }
 
@@ -178,7 +185,7 @@ public class AIListener implements Runnable
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", e);
-         frame.writeToTextBox("Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", null);
+         MudFrame.writeToTextBox("Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", null);
       }
    }
 
@@ -260,7 +267,7 @@ public class AIListener implements Runnable
     */
    public String processOutput(String line, List<StyleRange> ranges)
    {
-      add(line);
+      add(line.trim());
       if (ai.isFormatter())
          return ai.format(line, ranges);
       return line;
@@ -296,7 +303,7 @@ public class AIListener implements Runnable
                buf.append("  " + key + " -> " + String.join(";", aliases.get(key)) + "\n");
             }
             buf.append("\n");
-            frame.writeToTextBox(buf.toString(), null);
+            MudFrame.writeToTextBox(buf.toString(), null);
          }
          else
          {
@@ -346,17 +353,17 @@ public class AIListener implements Runnable
       {
          ai = newAI;
          name = aiName;
-         frame.writeToTextBox("Now using AI: " + name, null);
+         MudFrame.writeToTextBox("Now using AI: " + name, null);
          ai.start();
          loadAliases();
          return true;
       }
 
-      frame.writeToTextBox("AI by name {" + aiName + "} not found.\n", null);
-      frame.writeToTextBox(
+      MudFrame.writeToTextBox("AI by name {" + aiName + "} not found.\n", null);
+      MudFrame.writeToTextBox(
             "Currently registered AI's: " + Arrays.toString(AIMap.keySet().toArray(new String[0])) + "\n",
             null);
-      frame.writeToTextBox("Currently using AI: " + name + "\n\n", null);
+      MudFrame.writeToTextBox("Currently using AI: " + name + "\n\n", null);
       return false;
    }
 

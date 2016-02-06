@@ -22,6 +22,7 @@ public class MumeAI implements AIInterface
       services = new ArrayList<>();
       services.add(new MumeTime(frame));
       services.add(new MumeFormatter());
+      services.add(new MumeTriggers());
    }
    
    @Override

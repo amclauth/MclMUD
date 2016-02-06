@@ -13,6 +13,7 @@ public class MumeFormatter implements AIInterface
 {
 
    private static final Pattern pathPattern = Pattern.compile("-\\w+-");
+   private static final Pattern roadPattern = Pattern.compile("=\\w+=");
    private static final Pattern waterPattern = Pattern.compile("~\\w+~");
    private Pattern returnDirPattern;
    
@@ -41,7 +42,7 @@ public class MumeFormatter implements AIInterface
          m = pathPattern.matcher(line);
          while (m.find())
          {
-            if (m.start() != start)
+            if (m.start() != start && m.start() != start+1)
             {
                StyleRange r = new StyleRange();
                r.start = m.start();
@@ -53,12 +54,24 @@ public class MumeFormatter implements AIInterface
          m = waterPattern.matcher(line);
          while (m.find())
          {
-            if (m.start() != start)
+            if (m.start() != start && m.start() != start+1)
             {
                StyleRange r = new StyleRange();
                r.start = m.start();
                r.length = m.end() - m.start();
                r.foreground = MudFrame.colors[6];
+               ranges.add(r);
+            }
+         }
+         m = roadPattern.matcher(line);
+         while (m.find())
+         {
+            if (m.start() != start && m.start() != start+1)
+            {
+               StyleRange r = new StyleRange();
+               r.start = m.start();
+               r.length = m.end() - m.start();
+               r.foreground = MudFrame.colors[2];
                ranges.add(r);
             }
          }

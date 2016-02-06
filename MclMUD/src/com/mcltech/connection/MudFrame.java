@@ -38,12 +38,12 @@ import com.mcltech.base.MudLogger;
 public class MudFrame
 {
    Shell shell;
-   private Display display;
+   private static Display display;
    static final MudLogger log = MudLogger.getInstance();
-   StyledText outputText;
+   static StyledText outputText;
    Text inputText;
-   Controller controller;
-   AIListener ai;
+   static Controller controller;
+   static AIListener ai;
    List<String> commandStack = new LinkedList<>();
    static int COMMAND_STACK_SIZE;
    int commandStackIdx = -1;
@@ -62,7 +62,7 @@ public class MudFrame
     * @param line
     * @param ranges (start should be set with respect to the string itself)
     */
-   public void writeToTextBox(String line, List<StyleRange> ranges)
+   public static void writeToTextBox(String line, List<StyleRange> ranges)
    {
       List<StyleRange> rangeCopy = new ArrayList<>();
       if (ranges != null)
@@ -152,7 +152,7 @@ public class MudFrame
       colors[5] = display.getSystemColor(SWT.COLOR_MAGENTA);
       colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
       colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
-      colors[8] = display.getSystemColor(SWT.COLOR_GRAY);
+      colors[8] = display.getSystemColor(SWT.COLOR_DARK_GREEN);
       shell = new Shell(display);
       GridLayout gridLayout = new GridLayout();
       gridLayout.numColumns = 1;
@@ -164,8 +164,8 @@ public class MudFrame
       createInputScreen();
 
       ai = new AIListener(this, "Basic");
-      AnsiParser.init(display, this);
-      controller = new Controller(this);
+      AnsiParser.init(display);
+      controller = new Controller();
       controller.init();
 
       // try to get the location and size from the Configger
@@ -232,7 +232,7 @@ public class MudFrame
    /**
     * Stop ongoing processes in the ai and controller
     */
-   public void stop()
+   public static void stop()
    {
       ai.deregister();
       controller.disconnect();
@@ -350,23 +350,29 @@ public class MudFrame
                   inputText.selectAll();
                   return;
                }
-               List<String> commands = ai.processCommand(input);
-               if (commands != null)
-               {
-                  String com = String.join(";", commands);
-                  writeToTextBox(com + "\n", null);
-                  for (String command : commands)
-                  {
-                     controller.write(command + "\n");
-                     log.add(Level.INFO, command);
-                  }
-               }
+               MudFrame.writeCommand(input);
+               
                // keep the text there and selected, so just pressing enter
-               // repeats the last command
+               // repeats the last command, but you can type over it.
                inputText.selectAll();
             }
          }
       });
+   }
+   
+   public static void writeCommand(String input)
+   {
+      List<String> commands = ai.processCommand(input);
+      if (commands != null)
+      {
+         String com = String.join(";", commands);
+         writeToTextBox(com + "\n", null);
+         for (String command : commands)
+         {
+            controller.write(command + "\n");
+            log.add(Level.INFO, command);
+         }
+      }
    }
 
    /**
@@ -504,7 +510,7 @@ public class MudFrame
     * 
     * @return
     */
-   public AIListener getListener()
+   public static AIListener getListener()
    {
       return ai;
    }
