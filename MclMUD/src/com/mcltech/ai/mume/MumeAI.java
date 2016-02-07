@@ -15,6 +15,9 @@ public class MumeAI implements AIInterface
    MumeTime mumeTime;
    
    List<AIInterface> services;
+   List<AIInterface> triggerers;
+   List<AIInterface> commanders;
+   List<AIInterface> formatters;
 
    public MumeAI(MudFrame frame)
    {
@@ -23,6 +26,19 @@ public class MumeAI implements AIInterface
       services.add(new MumeTime(frame));
       services.add(new MumeFormatter());
       services.add(new MumeTriggers());
+      
+      triggerers = new ArrayList<>();
+      commanders = new ArrayList<>();
+      formatters = new ArrayList<>();
+      for (AIInterface i : services)
+      {
+         if (i.isTriggerer())
+            triggerers.add(i);
+         if (i.isCommander())
+            commanders.add(i);
+         if (i.isFormatter())
+            formatters.add(i);
+      }
    }
    
    @Override
@@ -51,10 +67,9 @@ public class MumeAI implements AIInterface
       // color -*- as a road and ~*~ as water
       
       String out = line;
-      for (AIInterface service : services)
+      for (AIInterface service : formatters)
       {
-         if (service.isFormatter())
-            out = service.format(line, ranges);
+         out = service.format(line, ranges);
       }
       return out;
    }
@@ -65,10 +80,9 @@ public class MumeAI implements AIInterface
       if (line == null || line.isEmpty())
          return;
       
-      for (AIInterface service : services)
+      for (AIInterface service : triggerers)
       {
-         if (service.isTriggerer())
-            service.trigger(line);
+         service.trigger(line);
       }
    }
 
@@ -76,10 +90,9 @@ public class MumeAI implements AIInterface
    public boolean command(String command)
    {
       boolean retval = false;
-      for (AIInterface service : services)
+      for (AIInterface service : commanders)
       {
-         if (service.isFormatter())
-            retval |= service.command(command);
+         retval |= service.command(command);
       }
       return retval;
    }
@@ -87,19 +100,19 @@ public class MumeAI implements AIInterface
    @Override
    public boolean isFormatter()
    {
-      return true;
+      return formatters.size() > 0;
    }
 
    @Override
    public boolean isTriggerer()
    {
-      return true;
+      return triggerers.size() > 0;
    }
 
    @Override
    public boolean isCommander()
    {
-      return true;
+      return commanders.size() > 0;
    }
    
    
