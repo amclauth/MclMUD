@@ -222,6 +222,9 @@ public class AnsiParser
       // formatters could choose not to print this string by sending null back
       if (lineBuffer == null)
       {
+         lineBuffer = "";
+         lbIdx = 0;
+         ranges.clear();
          return;
       }
       

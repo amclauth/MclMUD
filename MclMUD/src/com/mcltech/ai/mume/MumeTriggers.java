@@ -9,6 +9,12 @@ import com.mcltech.connection.MudFrame;
 
 public class MumeTriggers implements AIInterface
 {
+   private MumeAI mumeAI;
+   
+   public MumeTriggers(MumeAI mumeAI)
+   {
+      this.mumeAI = mumeAI;
+   }
 
    @Override
    public void start()
@@ -52,6 +58,7 @@ public class MumeTriggers implements AIInterface
       if (line.equals("MUME: Multi Users in Middle-earth, version VIII."))
       {
          MudFrame.writeCommand(";change height 50;sl");
+         mumeAI.startConnected();
       }
       else if (line.equals("ZBLAM"))
       {

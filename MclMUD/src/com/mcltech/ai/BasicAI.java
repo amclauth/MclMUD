@@ -35,7 +35,7 @@ public class BasicAI implements AIInterface
    @Override
    public boolean command(String command)
    {
-      return true;
+      return false;
    }
 
    @Override

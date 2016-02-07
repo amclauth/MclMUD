@@ -194,7 +194,7 @@ public class AIListener implements Runnable
          MudFrame.writeToTextBox("Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", null);
       }
    }
-
+   
    /**
     * Add the line to the queue for trigger / script processing
     * 
@@ -275,10 +275,12 @@ public class AIListener implements Runnable
     */
    public String processOutput(String line, List<StyleRange> ranges)
    {
-      add(line.trim());
+      String out = line.trim();
       if (ai.isFormatter())
-         return ai.format(line, ranges);
-      return line;
+         out = ai.format(line, ranges);
+      if (out != null)
+         add(line.trim());
+      return out;
    }
 
    /**
@@ -335,14 +337,16 @@ public class AIListener implements Runnable
             continue;
          }
 
-         commands.addAll(expandAlias(line));
-
          if (ai.isCommander() && ai.command(line))
          {
             continue;
          }
+         
+         commands.addAll(expandAlias(line));
       }
-
+      
+      if (commands.size() == 0)
+         return null;
       return commands;
    }
 

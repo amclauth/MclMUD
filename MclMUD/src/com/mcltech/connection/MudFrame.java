@@ -371,13 +371,6 @@ public class MudFrame
             {
                String input = inputText.getText().trim();
 
-               commandStack.add(input);
-               while (commandStack.size() > COMMAND_STACK_SIZE)
-               {
-                  commandStack.remove(0);
-               }
-               commandStackIdx = commandStack.size() - 1;
-
                if (!controller.isConnected())
                {
                   addConnection(input);
@@ -389,6 +382,13 @@ public class MudFrame
                // keep the text there and selected, so just pressing enter
                // repeats the last command, but you can type over it.
                inputText.selectAll();
+
+               commandStack.add(input);
+               while (commandStack.size() > COMMAND_STACK_SIZE)
+               {
+                  commandStack.remove(0);
+               }
+               commandStackIdx = commandStack.size() - 1;
             }
          }
       });
@@ -397,14 +397,21 @@ public class MudFrame
    public static void writeCommand(String input)
    {
       List<String> commands = ai.processCommand(input);
-      if (commands != null)
+      if (commands != null && commands.size() > 0)
       {
-         String com = String.join(";", commands);
-         writeToTextBox(com + "\n", null);
-         for (String command : commands)
+         int startIdx = 0;
+         if (commands.get(0).startsWith("SIL_"))
          {
-            controller.write(command + "\n");
-            log.add(Level.INFO, command);
+            startIdx = 1;
+         }
+         for (int ii = startIdx; ii < commands.size(); ii++)
+         {
+            controller.write(commands.get(ii) + "\n");
+            log.add(Level.INFO, " > " + commands.get(ii));
+         }
+         if (startIdx == 0)
+         {
+            writeToTextBox(String.join(";", commands) + "\n", null);
          }
       }
    }
@@ -456,6 +463,7 @@ public class MudFrame
                {
                   ai.swapAI("basic");
                }
+               inputText.setFocus();
             }
          });
       }
@@ -472,6 +480,7 @@ public class MudFrame
          public void widgetSelected(SelectionEvent e)
          {
             controller.disconnect();
+            inputText.setFocus();
          }
       });
       
@@ -490,6 +499,7 @@ public class MudFrame
          public void widgetSelected(SelectionEvent e)
          {
             setFontSize(1);
+            inputText.setFocus();
          }
       });
       
@@ -501,6 +511,7 @@ public class MudFrame
          public void widgetSelected(SelectionEvent e)
          {
             setFontSize(-1);
+            inputText.setFocus();
          }
       });
 

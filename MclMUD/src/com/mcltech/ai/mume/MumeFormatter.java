@@ -121,7 +121,6 @@ public class MumeFormatter implements AIInterface
    @Override
    public boolean command(String line)
    {
-
       // just process single character directions for simplicity
       if (line.length() == 1)
       {
