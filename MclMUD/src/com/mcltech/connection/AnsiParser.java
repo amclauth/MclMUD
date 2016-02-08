@@ -32,7 +32,6 @@ public class AnsiParser
    private static final byte carriage = (byte) 0x0D;
    private static final byte bell = (byte) 0x07;
 
-   private static List<Integer> continuedSequences;
    private static boolean inEscape;
    private static boolean inControl;
    private static boolean isCarriage;
@@ -49,7 +48,6 @@ public class AnsiParser
     */
    public static void init(Display display)
    {
-      continuedSequences = new ArrayList<>();
       inEscape = false;
       inControl = false;
       isCarriage = false;
@@ -216,8 +214,50 @@ public class AnsiParser
     */
    private static void processString()
    {
+      // condense the ranges
+      List<StyleRange> condensedRanges = new ArrayList<>();
+      for (int ii = 0; ii < ranges.size(); ii++)
+      {
+         if (ii == 0)
+         {
+            condensedRanges.add(ranges.get(0));
+            continue;
+         }
+         
+         StyleRange last = condensedRanges.get(condensedRanges.size() - 1);
+         StyleRange curr = ranges.get(ii);
+         
+         if (last.start == curr.start)
+         {
+            if (curr.foreground != null)
+               last.foreground = curr.foreground;
+            if (curr.background != null)
+               last.background = curr.background;
+            if (curr.underline != last.underline)
+               last.underline = curr.underline;
+            if (curr.fontStyle != last.fontStyle)
+               last.fontStyle = curr.fontStyle;
+            continue;
+         }
+         
+         if (last.start + last.length == curr.start + curr.length)
+         {
+            // carry through font styles until the break at length
+            if (last.underline)
+               curr.underline = true;
+            if (last.fontStyle != SWT.NORMAL && curr.fontStyle == SWT.NORMAL)
+               curr.fontStyle = last.fontStyle;
+            
+            // carry through colors on nulls
+            if (curr.foreground == null)
+               curr.foreground = last.foreground;
+            if (curr.background == null)
+               curr.background = last.background;
+         }
+         condensedRanges.add(curr);
+      }
       // send the string to the listeners
-      lineBuffer = MudFrame.getListener().processOutput(lineBuffer, ranges);
+      lineBuffer = MudFrame.getListener().processOutput(lineBuffer, condensedRanges);
       
       // formatters could choose not to print this string by sending null back
       if (lineBuffer == null)
@@ -229,7 +269,7 @@ public class AnsiParser
       }
       
       // process style ranges if they exist and can be applied
-      if (lineBuffer.length() > 0 && ranges != null)
+      if (lineBuffer.length() > 0 && condensedRanges.size() != 0)
       {
          // change the length of each range that hasn't been terminated
          for (StyleRange r : ranges)
@@ -242,7 +282,7 @@ public class AnsiParser
       }
 
       // and write
-      MudFrame.writeToTextBox(lineBuffer, ranges);
+      MudFrame.writeToTextBox(lineBuffer, condensedRanges);
 
       // reset the line buffer and the ranges. We have the option to continue with
       // the "continuedSequnces" here, but I'm currently opting to end all sequences
@@ -270,7 +310,6 @@ public class AnsiParser
       else if (sequence == 0)
       {
          // set the length for all non-terminated sequences and return
-         continuedSequences.clear();
          for (StyleRange range : ranges)
          {
             if (range.length == -1)
@@ -280,8 +319,6 @@ public class AnsiParser
          }
          return;
       }
-
-      continuedSequences.add(Integer.valueOf(sequence));
 
       // Create the new style range for this sequence
       StyleRange range = new StyleRange();
@@ -294,7 +331,7 @@ public class AnsiParser
             range.fontStyle = SWT.BOLD;
             break;
          case 4: // underline
-            range.fontStyle = SWT.UNDERLINE_SINGLE;
+            range.underline = true;
             break;
          case 30: // foreground
          case 31:
@@ -319,7 +356,7 @@ public class AnsiParser
          default:
             return; // do nothing
       }
-
+      
       ranges.add(range);
    }
 

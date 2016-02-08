@@ -402,6 +402,7 @@ public class MumeAI implements AIInterface
                currentRoom.addExits(out.substring(startIdx,exitEnd).trim());
             }
          }
+         
          if (replacement == null)
          {
             startIdx = out.indexOf('<',startIdx+1);
