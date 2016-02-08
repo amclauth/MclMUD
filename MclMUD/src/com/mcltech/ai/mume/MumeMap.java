@@ -1,19 +1,19 @@
 package com.mcltech.ai.mume;
 
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.swt.custom.StyleRange;
 
 import com.mcltech.ai.AIInterface;
-import com.mcltech.connection.MudFrame;
 
-public class MumeTriggers implements AIInterface
+public class MumeMap implements AIInterface
 {
-   private MumeAI mumeAI;
+   private Map<String,MumeRoom> roomNameMap;
    
-   public MumeTriggers(MumeAI mumeAI)
+   public MumeMap()
    {
-      this.mumeAI = mumeAI;
+      
    }
 
    @Override
@@ -55,21 +55,25 @@ public class MumeTriggers implements AIInterface
    @Override
    public void trigger(String line)
    {
-      if (line.equals("MUME: Multi Users in Middle-earth, version VIII."))
+      // <movement dir=up/><room><name>Seagull Reception</name>
+      // </room><exits>Exits: east, up\n</exits>
+      // for unknown movement: <movment/>
+      if (line.contains("<movement dir="))
       {
-         MudFrame.writeCommand(";change xml on;change height 60;sl");
-         mumeAI.startConnected();
+         
       }
-      else if (line.equals("ZBLAM"))
+      if (line.contains("<room><name>"))
       {
-         // stand;ride
+         int startIdx = line.indexOf("<room><name>") + 12;
+         int endIdx = line.indexOf('<', startIdx);
+         String name = line.substring(startIdx,endIdx);
+         System.out.println(name);
       }
    }
 
    @Override
    public boolean command(String command)
    {
-      throw new UnsupportedOperationException("command Not Implemented");
+      throw new UnsupportedOperationException("format Not Implemented");
    }
-
 }

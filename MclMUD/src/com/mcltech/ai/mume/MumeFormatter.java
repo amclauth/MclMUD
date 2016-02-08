@@ -15,7 +15,6 @@ public class MumeFormatter implements AIInterface
    private static final Pattern pathPattern = Pattern.compile("-\\w+-");
    private static final Pattern roadPattern = Pattern.compile("=\\w+=");
    private static final Pattern waterPattern = Pattern.compile("~\\w+~");
-   private Pattern returnDirPattern;
    
    @Override
    public String format(String line, List<StyleRange> ranges)
@@ -25,9 +24,9 @@ public class MumeFormatter implements AIInterface
       {
          Matcher m = null;
          int start = -1;
-         if (returnDirPattern != null)
+         if (MumeAI.currentRoom != null && MumeAI.currentRoom.getReturnDirPattern() != null)
          {
-            m = returnDirPattern.matcher(line);
+            m = MumeAI.currentRoom.getReturnDirPattern().matcher(line);
             
             if (m.find())
             {
@@ -100,61 +99,25 @@ public class MumeFormatter implements AIInterface
    @Override
    public boolean isTriggerer()
    {
-      return true;
+      return false;
    }
 
    @Override
    public boolean isCommander()
    {
-      return true;
+      return false;
    }
 
    @Override
    public void trigger(String line)
    {
-      if (line.startsWith("You flee "))
-      {
-         setLastDirection(line.substring(9,10));
-      }
+      
    }
 
    @Override
    public boolean command(String line)
    {
-      // just process single character directions for simplicity
-      if (line.length() == 1)
-      {
-         setLastDirection(line);
-      }
       return false;
-   }
-   
-   private void setLastDirection(String c)
-   {
-      switch (c)
-      {
-         case "e":
-            returnDirPattern = Pattern.compile(" .?west.?[,.]");
-            break;
-         case "w":
-            returnDirPattern = Pattern.compile(" .?east.?[,.]");
-            break;
-         case "n":
-            returnDirPattern = Pattern.compile(" .?south.?[,.]");
-            break;
-         case "s":
-            returnDirPattern = Pattern.compile(" .?north.?[,.]");
-            break;
-         case "u":
-            returnDirPattern = Pattern.compile(" .?down.?[,.]");
-            break;
-         case "d":
-            returnDirPattern = Pattern.compile(" .?up.?[,.]");
-            break;
-         default:
-            returnDirPattern = null;
-            break;
-      }
    }
 
 }

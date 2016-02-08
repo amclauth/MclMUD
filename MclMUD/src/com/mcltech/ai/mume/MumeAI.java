@@ -1,7 +1,9 @@
 package com.mcltech.ai.mume;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
@@ -20,6 +22,8 @@ public class MumeAI implements AIInterface
    
    static final MudLogger log = MudLogger.getInstance();
    
+   public static MumeRoom currentRoom;
+   
    List<AIInterface> services;
    List<AIInterface> triggerers;
    List<AIInterface> commanders;
@@ -30,6 +34,8 @@ public class MumeAI implements AIInterface
    Timer friendTimer;
    
    int silent_who_countdown = 0;
+   private Map<String,String> tags;
+   private Map<String,String> escapes;
 
    public MumeAI(MudFrame frame)
    {
@@ -37,6 +43,7 @@ public class MumeAI implements AIInterface
       services.add(new MumeTime(frame));
       services.add(new MumeFormatter());
       services.add(new MumeTriggers(this));
+      services.add(new MumeMap());
       
       triggerers = new ArrayList<>();
       commanders = new ArrayList<>();
@@ -61,6 +68,80 @@ public class MumeAI implements AIInterface
             friendList.add(friend);
          }
       }
+      
+      tags = new HashMap<>();
+      tags.put("<prompt>","");
+      tags.put("<room>", "");
+      tags.put("<room><name>",""); 
+      // can't use "<name>" because that's in the login screen. Jerks.
+      tags.put("<description>","");
+      tags.put("<status>","");
+      tags.put("<terrain>","");
+      tags.put("<magic>","");
+      tags.put("<exits>","");
+      tags.put("<tell>","");
+      tags.put("<say>","");
+      tags.put("<narrate>","");
+      tags.put("<song>","");
+      tags.put("<pray>","");
+      tags.put("<shout>","");
+      tags.put("<yell>","");
+      tags.put("<emote>","");
+      tags.put("<hit>","");
+      tags.put("<damage>","");
+      tags.put("<weather>","");
+      tags.put("<highlight type=avoid_damage>", "");
+      tags.put("<highlight type=damage>", "");
+      tags.put("<highlight type=emote>", "");
+      tags.put("<highlight type=enemy>", "");
+      tags.put("<highlight type=exits>", "");
+      tags.put("<highlight type=header>", "");
+      tags.put("<highlight type=hit>", "");
+      tags.put("<highlight type=name>", "");
+      tags.put("<highlight type=magic>", "");
+      tags.put("<highlight type=miss>", "");
+      tags.put("<highlight type=narrate>", "");
+      tags.put("<highlight type=weather>", "");
+      tags.put("<highlight type=pray>", "");
+      tags.put("<highlight type=prompt>", "");
+      tags.put("<highlight type=description>", "");
+      tags.put("<highlight type=say>", "");
+      tags.put("<highlight type=shout>", "");
+      tags.put("<highlight type=social>", "");
+      tags.put("<highlight type=song>", "");
+      tags.put("<highlight type=status>", "");
+      tags.put("<highlight type=tell>", "");
+      tags.put("<highlight type=yell>", "");
+      
+      tags.put("<movement/>","");
+      
+      tags.put("</prompt>","");
+      tags.put("</room>","");
+      tags.put("</name>","");
+      tags.put("</description>","");
+      tags.put("</status>","");
+      tags.put("</terrain>","");
+      tags.put("</magic>","");
+      tags.put("</exits>","");
+      tags.put("</tell>","");
+      tags.put("</say>","");
+      tags.put("</narrate>","");
+      tags.put("</song>","");
+      tags.put("</pray>","");
+      tags.put("</shout>","");
+      tags.put("</yell>","");
+      tags.put("</emote>","");
+      tags.put("</hit>","");
+      tags.put("</damage>","");
+      tags.put("</weather>","");
+      tags.put("</highlight>", "");
+      
+      escapes = new HashMap<>();
+      escapes.put("&lt;", "<");
+      escapes.put("&gt;",">");
+      escapes.put("&amp;","&");
+      escapes.put("&nbsp;"," ");
+      escapes.put("&quot;","\"");
    }
    
    public void startConnected()
@@ -98,35 +179,31 @@ public class MumeAI implements AIInterface
       if (line == null || line.isEmpty())
          return line;
       
-      if (silent_who_countdown == -1 && line.trim().startsWith("Players"))
+      String out = line;
+      
+      if (silent_who_countdown == -1 && out.trim().endsWith("<header>Players</header>"))
       {
-         silent_who_countdown = 3;
+         silent_who_countdown = 1;
          return null;
       }
       
-      if (silent_who_countdown > 0)
+      if (silent_who_countdown == 1)
       {
-         if (silent_who_countdown < 3)
+         if (out.startsWith("<prompt>"))
          {
-            silent_who_countdown--;
-            return null;
-         }
-         if (line.contains(" allies ") && line.trim().endsWith("on."))
-         {
-            silent_who_countdown--;
+            silent_who_countdown = 0;
             return null;
          }
          
-
-         if (line.length() < 7)
+         if (out.length() < 7)
             return null;
          
          List<String> currentlyOnline = new ArrayList<>();
          for (String friend : friendList)
          {
-            if (line.length() < 6+friend.length())
+            if (out.length() < 6+friend.length())
                continue;
-            String comp = line.substring(6, 6+friend.length());
+            String comp = out.substring(6, 6+friend.length());
             if (comp.toLowerCase().equals(friend))
             {
                currentlyOnline.add(friend);
@@ -149,12 +226,22 @@ public class MumeAI implements AIInterface
          onlineFriends = currentlyOnline;
          return null;
       }
+
+      if (out.indexOf('<') > -1)
+      {
+         out = removeTags(out,ranges);
+      }
       
-      String out = line;
+      if (out.indexOf('&') > -1)
+      {
+         out = removeEscapes(out,ranges);
+      }
+      
       for (AIInterface service : formatters)
       {
-         out = service.format(line, ranges);
+         out = service.format(out, ranges);
       }
+      
       return out;
    }
 
@@ -253,8 +340,131 @@ public class MumeAI implements AIInterface
       {
          silent_who_countdown = -1;
          MudFrame.writeCommand("SIL_WHO;who");
+      }  
+   }
+   
+   private String removeTags(String line, List<StyleRange> ranges)
+   {
+      String out = line;
+      
+      int startIdx = out.indexOf('<');
+      while (startIdx >= 0 && startIdx < out.length())
+      {
+         int endIdx = out.indexOf('>', startIdx);
+         if (endIdx == -1)
+            break;
+         
+         String substr = out.substring(startIdx,endIdx+1);
+         // special case for "room"
+         if (substr.equals("<room>") && out.length() > endIdx+6 && out.substring(endIdx+1,endIdx+7).equals("<name>"))
+         {
+            substr = "<room><name>";
+            endIdx += 6;
+         }
+         String replacement = tags.get(substr);
+         if (replacement != null)
+         {
+            out = out.substring(0,startIdx) + out.substring(endIdx+1);
+            for (StyleRange range : ranges)
+            {
+               if (range.start > startIdx)
+               {
+                  range.start -= (endIdx - startIdx) + 1;
+               }
+               else if (range.start + range.length > startIdx)
+               {
+                  range.length -= (endIdx - startIdx) + 1;
+               }
+            }
+         }
+         if (substr.equals("<room><name>"))
+         {
+            currentRoom = new MumeRoom();
+            int roomEnd = out.indexOf('<',startIdx);
+            if (roomEnd == -1)
+            {
+               currentRoom.setName(out.substring(startIdx).trim());
+            }
+            else
+            {
+               currentRoom.setName(out.substring(startIdx,roomEnd).trim());
+            }
+         }
+         else if (substr.equals("<exits>"))
+         {
+            int exitEnd = out.indexOf('<',startIdx);
+            if (exitEnd == -1)
+            {
+               currentRoom.addExits(out.substring(startIdx).trim());
+            }
+            else
+            {
+               currentRoom.addExits(out.substring(startIdx,exitEnd).trim());
+            }
+         }
+         if (replacement == null)
+         {
+            startIdx = out.indexOf('<',startIdx+1);
+         }
+         else
+         {
+            startIdx = out.indexOf('<',startIdx);
+         }
       }
       
+      // movement direction
+      startIdx = out.indexOf("<movement dir=");
+      if (startIdx >= 0)
+      {
+         int endIdx = out.indexOf('/',startIdx+14);
+         if (endIdx > 0 && endIdx+2 < out.length())
+         {
+            currentRoom.setLastDirection(out.charAt(startIdx+14));
+            out = out.substring(0,startIdx) + out.substring(endIdx+2);
+            for (StyleRange range : ranges)
+            {
+               if (range.start > startIdx)
+               {
+                  range.start -= (endIdx - startIdx) + 2;
+               }
+               else if (range.start + range.length > startIdx)
+               {
+                  range.length -= (endIdx - startIdx) + 2;
+               }
+            }
+         }
+      }
+      return out;
+   }
+   
+   private String removeEscapes(String line, List<StyleRange> ranges)
+   {
+      String out = line;
+      
+      int startIdx = out.indexOf('&');
+      while (startIdx >= 0 && startIdx < out.length())
+      {
+         int endIdx = out.indexOf(';', startIdx);
+         if (endIdx == -1)
+            break;
+         
+         String substr = out.substring(startIdx,endIdx+1);
+         String replacement = escapes.get(substr);
+         if (replacement != null)
+         {
+            out = out.substring(0,startIdx) + out.substring(endIdx+1);
+            for (StyleRange range : ranges)
+            {
+               if (range.start > startIdx)
+               {
+                  range.start -= (endIdx - startIdx) + 1;
+               }
+            }
+         }
+         startIdx = out.indexOf('&',startIdx+1);
+      }
+      
+      return out;
    }
 
 }
