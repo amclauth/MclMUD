@@ -73,7 +73,7 @@ public class MumeAI implements AIInterface
       tags.put("<prompt>","");
       tags.put("<room>", "");
       tags.put("<room><name>",""); 
-      // can't use "<name>" because that's in the login screen. Jerks.
+      // can't use "<name>" because that's also in the login screen. Jerks.
       tags.put("<description>","");
       tags.put("<status>","");
       tags.put("<terrain>","");

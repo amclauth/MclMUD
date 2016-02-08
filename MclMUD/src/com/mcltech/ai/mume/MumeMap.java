@@ -58,16 +58,9 @@ public class MumeMap implements AIInterface
       // <movement dir=up/><room><name>Seagull Reception</name>
       // </room><exits>Exits: east, up\n</exits>
       // for unknown movement: <movment/>
-      if (line.contains("<movement dir="))
+      if (line.contains("</room>"))
       {
-         
-      }
-      if (line.contains("<room><name>"))
-      {
-         int startIdx = line.indexOf("<room><name>") + 12;
-         int endIdx = line.indexOf('<', startIdx);
-         String name = line.substring(startIdx,endIdx);
-         System.out.println(name);
+         MumeRoom thisRoom = MumeAI.currentRoom.copy();
       }
    }
 

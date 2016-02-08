@@ -323,6 +323,24 @@ public class MumeTime implements AIInterface
       {
          setClock(line);
       }
+      else if (line.contains("The day has begun."))
+      {
+         if (month > -1)
+         {
+            int currentHour = monthMap.get(Integer.valueOf(month)+"").dawn-1;
+            setClock(System.currentTimeMillis() / 1000 - currentHour*60);
+            System.out.println(line);
+         }
+      }
+      else if (line.contains("The night has begun."))
+      {
+         if (month > -1)
+         {
+            int currentHour = monthMap.get(Integer.valueOf(month)+"").dusk;
+            setClock(System.currentTimeMillis() / 1000 - currentHour*60);
+            System.out.println(line);
+         }
+      }
       
       // day parsing
       if (monthPattern.matcher(line).find(0))

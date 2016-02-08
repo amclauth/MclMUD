@@ -6,12 +6,12 @@ public class MumeRoom
 {
    private String name;
    private char lastDirection;
-   private boolean northExit;
-   private boolean southExit;
-   private boolean eastExit;
-   private boolean westExit;
-   private boolean upExit;
-   private boolean downExit;
+   private Boolean northExit;
+   private Boolean southExit;
+   private Boolean eastExit;
+   private Boolean westExit;
+   private Boolean upExit;
+   private Boolean downExit;
    private Pattern returnDirPattern;
 
    public MumeRoom()
@@ -21,7 +21,21 @@ public class MumeRoom
    
    public void addExits(String exitString)
    {
-      System.out.println("Exit String: " + exitString);
+//      System.out.println("Exit String: " + exitString);
+   }
+   
+   public MumeRoom copy()
+   {
+      // don't copy returnDirPattern or lastDirection
+      MumeRoom newRoom = new MumeRoom();
+      newRoom.name = name;
+      newRoom.northExit = northExit;
+      newRoom.southExit = southExit;
+      newRoom.eastExit = eastExit;
+      newRoom.westExit = westExit;
+      newRoom.upExit = upExit;
+      newRoom.downExit = downExit;
+      return newRoom;
    }
 
    public String getName()
@@ -69,62 +83,62 @@ public class MumeRoom
          lastDirection = c;
    }
 
-   public boolean isNorthExit()
+   public Boolean isNorthExit()
    {
       return northExit;
    }
 
-   public void setNorthExit(boolean northExit)
+   public void setNorthExit(Boolean northExit)
    {
       this.northExit = northExit;
    }
 
-   public boolean isSouthExit()
+   public Boolean isSouthExit()
    {
       return southExit;
    }
 
-   public void setSouthExit(boolean southExit)
+   public void setSouthExit(Boolean southExit)
    {
       this.southExit = southExit;
    }
 
-   public boolean isEastExit()
+   public Boolean isEastExit()
    {
       return eastExit;
    }
 
-   public void setEastExit(boolean eastExit)
+   public void setEastExit(Boolean eastExit)
    {
       this.eastExit = eastExit;
    }
 
-   public boolean isWestExit()
+   public Boolean isWestExit()
    {
       return westExit;
    }
 
-   public void setWestExit(boolean westExit)
+   public void setWestExit(Boolean westExit)
    {
       this.westExit = westExit;
    }
 
-   public boolean isUpExit()
+   public Boolean isUpExit()
    {
       return upExit;
    }
 
-   public void setUpExit(boolean upExit)
+   public void setUpExit(Boolean upExit)
    {
       this.upExit = upExit;
    }
 
-   public boolean isDownExit()
+   public Boolean isDownExit()
    {
       return downExit;
    }
 
-   public void setDownExit(boolean downExit)
+   public void setDownExit(Boolean downExit)
    {
       this.downExit = downExit;
    }
