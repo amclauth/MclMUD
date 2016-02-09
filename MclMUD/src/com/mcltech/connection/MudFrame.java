@@ -47,7 +47,7 @@ public class MudFrame
    List<String> commandStack = new LinkedList<>();
    int COMMAND_STACK_SIZE;
    int commandStackIdx = -1;
-   public static Color[] colors = new Color[10];
+   private Color[] colors;
    int fontSize = 12;
    
    // singleton class holder pattern
@@ -90,17 +90,6 @@ public class MudFrame
       if (shell == null)
          shell = new Shell(display);
       
-      // set up the system colors
-      colors[0] = display.getSystemColor(SWT.COLOR_BLACK);
-      colors[1] = display.getSystemColor(SWT.COLOR_RED);
-      colors[2] = display.getSystemColor(SWT.COLOR_GREEN);
-      colors[3] = display.getSystemColor(SWT.COLOR_YELLOW);
-      colors[4] = display.getSystemColor(SWT.COLOR_BLUE);
-      colors[5] = display.getSystemColor(SWT.COLOR_MAGENTA);
-      colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
-      colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
-      colors[8] = display.getSystemColor(SWT.COLOR_DARK_GREEN);
-      
       try {
          int newFontSize = Integer.valueOf(Configger.getProperty("FONTSIZE", "12")).intValue();
          if (newFontSize != fontSize)
@@ -125,7 +114,6 @@ public class MudFrame
       createInputScreen();
 
       ai = new AIListener(this, "Basic");
-      AnsiParser.getInstance().init(display);
       controller = new Controller();
       controller.init();
 
@@ -606,5 +594,30 @@ public class MudFrame
    public Display getDisplay()
    {
       return display;
+   }
+   
+   /**
+    * Get the color with this index
+    * @param idx
+    * @return
+    */
+   public Color getColor(int idx)
+   {
+      if (colors == null)
+      {
+         colors = new Color[9];
+         // set up the system colors
+         colors[0] = display.getSystemColor(SWT.COLOR_BLACK);
+         colors[1] = display.getSystemColor(SWT.COLOR_RED);
+         colors[2] = display.getSystemColor(SWT.COLOR_GREEN);
+         colors[3] = display.getSystemColor(SWT.COLOR_YELLOW);
+         colors[4] = display.getSystemColor(SWT.COLOR_BLUE);
+         colors[5] = display.getSystemColor(SWT.COLOR_MAGENTA);
+         colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
+         colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
+         colors[8] = display.getSystemColor(SWT.COLOR_DARK_GREEN);
+      }
+      
+      return colors[idx];
    }
 }

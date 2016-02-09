@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 public class MudLogger implements Runnable
 {
    private Thread writer;
+   private static boolean isMocked = false;
 
    // singleton class holder pattern
    private static final class holder
@@ -35,43 +36,51 @@ public class MudLogger implements Runnable
    {
       return holder.INSTANCE;
    }
+   
+   public static void injectEmptyLogger()
+   {
+      isMocked = true;
+   }
 
    MudLogger()
    {
       queue = new LinkedBlockingQueue<>();
 
-      // make sure the folders exist
-      File logFolder = new File("logs");
-      File configFolder = new File("config");
-      if (!logFolder.exists())
+      if (!isMocked)
       {
-         logFolder.mkdirs();
+         // make sure the folders exist
+         File logFolder = new File("logs");
+         File configFolder = new File("config");
+         if (!logFolder.exists())
+         {
+            logFolder.mkdirs();
+         }
+         if (!configFolder.exists())
+         {
+            configFolder.mkdirs();
+         }
+   
+         // set up the logger
+         Handler handler = null;
+         try
+         {
+            handler = new FileHandler("logs/mclmud.log", 10 * 1024 * 1024, 5);
+            handler.setFormatter(new OneLineFormatter());
+         }
+         catch (IOException e)
+         {
+            System.err.println("Error creating log file: logs/mclmud.log: " + e.getMessage());
+            System.exit(1);
+            return;
+         }
+   
+         handler.setLevel(Level.ALL);
+         log.addHandler(handler);
+         log.setUseParentHandlers(false);
+   
+         writer = new Thread(this);
+         writer.start();
       }
-      if (!configFolder.exists())
-      {
-         configFolder.mkdirs();
-      }
-
-      // set up the logger
-      Handler handler = null;
-      try
-      {
-         handler = new FileHandler("logs/mclmud.log", 10 * 1024 * 1024, 5);
-         handler.setFormatter(new OneLineFormatter());
-      }
-      catch (IOException e)
-      {
-         System.err.println("Error creating log file: logs/mclmud.log: " + e.getMessage());
-         System.exit(1);
-         return;
-      }
-
-      handler.setLevel(Level.ALL);
-      log.addHandler(handler);
-      log.setUseParentHandlers(false);
-
-      writer = new Thread(this);
-      writer.start();
    }
 
    /**
@@ -125,7 +134,8 @@ public class MudLogger implements Runnable
     */
    public void stop()
    {
-      writer.interrupt();
+      if (writer != null)
+         writer.interrupt();
    }
 
    /**

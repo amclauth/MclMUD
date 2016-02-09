@@ -7,5 +7,6 @@
 	<classpathentry kind="lib" path="lib/commons-net-3.4.jar" sourcepath="lib/commons-net-3.4-sources.jar"/>
 	<classpathentry kind="lib" path="lib/swt/swt.jar" sourcepath="lib/swt/src.zip"/>
 	<classpathentry kind="lib" path="lib/test/mockito-all-1.9.5.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

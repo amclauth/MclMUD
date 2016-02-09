@@ -214,8 +214,8 @@ public class MumeAI implements AIInterface
                }
                String friendOnline = "\n" + comp + " has appeard online!\n";
                StyleRange range = new StyleRange();
-               range.background = MudFrame.colors[2];
-               range.foreground = MudFrame.colors[0];
+               range.background = MudFrame.getInstance().getColor(2);
+               range.foreground = MudFrame.getInstance().getColor(0);
                range.fontStyle = SWT.ITALIC;
                range.start = 0;
                range.length = friendOnline.length();

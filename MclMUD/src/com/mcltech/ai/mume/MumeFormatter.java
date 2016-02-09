@@ -34,7 +34,7 @@ public class MumeFormatter implements AIInterface
                r.start = m.start();
                start = m.start();
                r.length = m.end() - m.start();
-               r.foreground = MudFrame.colors[3];
+               r.foreground = MudFrame.getInstance().getColor(3);
                ranges.add(r);
             }
          }
@@ -46,7 +46,7 @@ public class MumeFormatter implements AIInterface
                StyleRange r = new StyleRange();
                r.start = m.start();
                r.length = m.end() - m.start();
-               r.foreground = MudFrame.colors[8];
+               r.foreground = MudFrame.getInstance().getColor(8);
                ranges.add(r);
             }
          }
@@ -58,7 +58,7 @@ public class MumeFormatter implements AIInterface
                StyleRange r = new StyleRange();
                r.start = m.start();
                r.length = m.end() - m.start();
-               r.foreground = MudFrame.colors[6];
+               r.foreground = MudFrame.getInstance().getColor(6);
                ranges.add(r);
             }
          }
@@ -70,7 +70,7 @@ public class MumeFormatter implements AIInterface
                StyleRange r = new StyleRange();
                r.start = m.start();
                r.length = m.end() - m.start();
-               r.foreground = MudFrame.colors[2];
+               r.foreground = MudFrame.getInstance().getColor(2);
                ranges.add(r);
             }
          }
