@@ -24,14 +24,14 @@ public class MumeAI implements AIInterface
    
    public static MumeRoom currentRoom;
    
-   List<AIInterface> services;
-   List<AIInterface> triggerers;
-   List<AIInterface> commanders;
-   List<AIInterface> formatters;
-   List<String> friendList;
-   List<String> onlineFriends;
+   private List<AIInterface> services;
+   private List<AIInterface> triggerers;
+   private List<AIInterface> commanders;
+   private List<AIInterface> formatters;
+   private List<String> friendList;
+   private List<String> onlineFriends;
    
-   Timer friendTimer;
+   private Timer friendTimer;
    
    int silent_who_countdown = 0;
    private Map<String,String> tags;
@@ -44,6 +44,7 @@ public class MumeAI implements AIInterface
       services.add(new MumeFormatter());
       services.add(new MumeTriggers(this));
       services.add(new MumeMap());
+      services.add(MumeInfoPanel.getInstance());
       
       triggerers = new ArrayList<>();
       commanders = new ArrayList<>();
@@ -220,7 +221,7 @@ public class MumeAI implements AIInterface
                range.length = friendOnline.length();
                List<StyleRange> rangeList = new ArrayList<>();
                rangeList.add(range);
-               MudFrame.writeToTextBox(friendOnline, rangeList);
+               MudFrame.getInstance().writeToTextBox(friendOnline, rangeList);
             }
          }
          onlineFriends = currentlyOnline;
@@ -270,7 +271,7 @@ public class MumeAI implements AIInterface
             friendList.add(friend);
             Configger.setProperty("MUMEFRIENDS", String.join(";", friendList));
             log.add(Level.INFO,"Adding {" + friend + "} to friends list");
-            MudFrame.writeToTextBox("\nAdding {" + friend + "} to friends list\n", null);
+            MudFrame.getInstance().writeToTextBox("\nAdding {" + friend + "} to friends list\n", null);
             if (friendList.size() == 1)
             {
                friendTimer = new Timer();
@@ -287,7 +288,7 @@ public class MumeAI implements AIInterface
             }
             sb.append("\n");
             sb.append("  Add a friend with \"friend <name>\" and remove them with \"defriend <name>\"\n");
-            MudFrame.writeToTextBox(sb.toString(), null);
+            MudFrame.getInstance().writeToTextBox(sb.toString(), null);
          }
          return true;
       }
@@ -297,7 +298,7 @@ public class MumeAI implements AIInterface
          friendList.remove(friend);
          Configger.setProperty("MUMEFRIENDS", String.join(";", friendList));
          log.add(Level.INFO,"Removing {" + friend + "} from friends list");
-         MudFrame.writeToTextBox("\nRemoving {" + friend + "} from friends list\n", null);
+         MudFrame.getInstance().writeToTextBox("\nRemoving {" + friend + "} from friends list\n", null);
          if (friendList.size() == 0)
          {
             friendTimer.cancel();
@@ -339,7 +340,7 @@ public class MumeAI implements AIInterface
       public void run()
       {
          silent_who_countdown = -1;
-         MudFrame.writeCommand("SIL_WHO;who");
+         MudFrame.getInstance().writeCommand("SIL_WHO;who");
       }  
    }
    

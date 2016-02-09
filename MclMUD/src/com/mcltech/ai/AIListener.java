@@ -76,7 +76,7 @@ public class AIListener implements Runnable
       
       if (idx <= 0 && aliasString.length() > 0 && aliases.containsKey(aliasString))
       {
-         MudFrame.writeToTextBox("\n  " + aliasString + " => " + String.join(";",aliases.get(aliasString)) + "\n",null);
+         MudFrame.getInstance().writeToTextBox("\n  " + aliasString + " => " + String.join(";",aliases.get(aliasString)) + "\n",null);
          return true;
       }
       
@@ -84,7 +84,7 @@ public class AIListener implements Runnable
       {
          log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString
                + "} should be in format \"alias name:command;command;command;...\"");
-         MudFrame.writeToTextBox("Alias is improperly formatted. {" + aliasString
+         MudFrame.getInstance().writeToTextBox("Alias is improperly formatted. {" + aliasString
                + "} should be in format \"alias name:command;command;command;...\"\n", null);
          return false;
       }
@@ -103,13 +103,13 @@ public class AIListener implements Runnable
       {
          log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString
                + "} should be in format \"alias name:command;command;command;...\"");
-         MudFrame.writeToTextBox("Alias is improperly formatted. {" + aliasString
+         MudFrame.getInstance().writeToTextBox("Alias is improperly formatted. {" + aliasString
                + "} should be in format \"alias name:command;command;command;...\"\n", null);
          return false;
       }
       aliases.put(alias, commands);
       writeAliases();
-      MudFrame.writeToTextBox("\nAdded alias " + alias + " -> " + String.join(";", commands) + "\n", null);
+      MudFrame.getInstance().writeToTextBox("\nAdded alias " + alias + " -> " + String.join(";", commands) + "\n", null);
       return true;
    }
 
@@ -145,7 +145,7 @@ public class AIListener implements Runnable
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Couldn't write alias file {" + aliasFile.getAbsolutePath() + "}", e);
-         MudFrame.writeToTextBox("Couldn't write alias file {" + aliasFile.getAbsolutePath() + "}", null);
+         MudFrame.getInstance().writeToTextBox("Couldn't write alias file {" + aliasFile.getAbsolutePath() + "}", null);
       }
    }
 
@@ -191,7 +191,7 @@ public class AIListener implements Runnable
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", e);
-         MudFrame.writeToTextBox("Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", null);
+         MudFrame.getInstance().writeToTextBox("Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", null);
       }
    }
    
@@ -276,6 +276,8 @@ public class AIListener implements Runnable
    public String processOutput(String line, List<StyleRange> ranges)
    {
       String out = line.trim();
+      // TODO remove this when we're comfortable with the formatted output only
+      log.add(Level.INFO, line);
       if (ai.isFormatter())
          out = ai.format(line, ranges);
       if (out != null)
@@ -313,7 +315,7 @@ public class AIListener implements Runnable
                buf.append("  " + key + " -> " + String.join(";", aliases.get(key)) + "\n");
             }
             buf.append("\n");
-            MudFrame.writeToTextBox(buf.toString(), null);
+            MudFrame.getInstance().writeToTextBox(buf.toString(), null);
          }
          else
          {
@@ -365,17 +367,17 @@ public class AIListener implements Runnable
       {
          ai = newAI;
          name = aiName;
-         MudFrame.writeToTextBox("Now using AI: " + name, null);
+         MudFrame.getInstance().writeToTextBox("Now using AI: " + name, null);
          ai.start();
          loadAliases();
          return true;
       }
 
-      MudFrame.writeToTextBox("AI by name {" + aiName + "} not found.\n", null);
-      MudFrame.writeToTextBox(
+      MudFrame.getInstance().writeToTextBox("AI by name {" + aiName + "} not found.\n", null);
+      MudFrame.getInstance().writeToTextBox(
             "Currently registered AI's: " + Arrays.toString(AIMap.keySet().toArray(new String[0])) + "\n",
             null);
-      MudFrame.writeToTextBox("Currently using AI: " + name + "\n\n", null);
+      MudFrame.getInstance().writeToTextBox("Currently using AI: " + name + "\n\n", null);
       return false;
    }
 

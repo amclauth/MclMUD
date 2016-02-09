@@ -7,7 +7,7 @@ public class MclMUDMain
 
    public static void main(String[] args)
    {
-      (new MudFrame()).init();
+      MudFrame.getInstance().init();
    }
 
 }

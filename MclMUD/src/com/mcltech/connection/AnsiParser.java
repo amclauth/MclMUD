@@ -31,22 +31,35 @@ public class AnsiParser
    private static final byte formfeed = (byte) 0x0C;
    private static final byte carriage = (byte) 0x0D;
    private static final byte bell = (byte) 0x07;
+   
+   private boolean inEscape;
+   private boolean inControl;
+   private boolean isCarriage;
+   private int sequence;
+   private List<StyleRange> ranges;
+   private int lbIdx;
 
-   private static boolean inEscape;
-   private static boolean inControl;
-   private static boolean isCarriage;
-   private static int sequence;
-   static List<StyleRange> ranges;
-   private static int lbIdx;
+   private String lineBuffer;
+   
+   // singleton class holder pattern
+   private static final class holder
+   {
+      static final AnsiParser INSTANCE = new AnsiParser();
+   }
 
-   static String lineBuffer;
+   public static AnsiParser getInstance()
+   {
+      return holder.INSTANCE;
+   }
+   
+   AnsiParser() {}
 
    /**
     * Initialize the parser
     * @param display
     * @param mudframe
     */
-   public static void init(Display display)
+   public void init(Display display)
    {
       inEscape = false;
       inControl = false;
@@ -65,7 +78,7 @@ public class AnsiParser
     * @param bytes
     * @param ret_read
     */
-   public static void parseBytes(byte[] bytes, int len)
+   public synchronized void parseBytes(byte[] bytes, int len)
    {
       byte[] out = new byte[bytes.length];
       int idx = 0;
@@ -103,8 +116,11 @@ public class AnsiParser
          {
             try
             {
-               lineBuffer += (new String(out, startIdx, idx - startIdx, "cp1252")) + "\n";
-               startIdx = idx;
+               synchronized(this)
+               {
+                  lineBuffer += (new String(out, startIdx, idx - startIdx, "cp1252")) + "\n";
+                  startIdx = idx;
+               }
             }
             catch (UnsupportedEncodingException e)
             {
@@ -134,7 +150,7 @@ public class AnsiParser
             // on a separator, parse the existing sequence command
             if (b == sep1 || b == sep2 || b == end)
             {
-               setStyle(sequence, lbIdx);
+               setStyle(sequence, lbIdx, ranges);
                sequence = 0;
                if (b == end)
                {
@@ -192,7 +208,10 @@ public class AnsiParser
       // add to the lineBuffer when done parsing these bits
       try
       {
-         lineBuffer += (new String(out, startIdx, idx - startIdx, "cp1252"));
+         synchronized(this)
+         {
+            lineBuffer += (new String(out, startIdx, idx - startIdx, "cp1252"));
+         }
       }
       catch (UnsupportedEncodingException e1)
       {
@@ -204,7 +223,7 @@ public class AnsiParser
    /**
     * Process the current string
     */
-   public static void flush()
+   public void flush()
    {
       processString();
    }
@@ -212,85 +231,88 @@ public class AnsiParser
    /**
     * Take the linebuffer and print it, with styles, to the output text
     */
-   private static void processString()
+   private void processString()
    {
-      // condense the ranges
-      List<StyleRange> condensedRanges = new ArrayList<>();
-      for (int ii = 0; ii < ranges.size(); ii++)
+      synchronized(this)
       {
-         if (ii == 0)
+         // condense the ranges
+         List<StyleRange> condensedRanges = new ArrayList<>();
+         for (int ii = 0; ii < ranges.size(); ii++)
          {
-            condensedRanges.add(ranges.get(0));
-            continue;
-         }
-         
-         StyleRange last = condensedRanges.get(condensedRanges.size() - 1);
-         StyleRange curr = ranges.get(ii);
-         
-         if (last.start == curr.start)
-         {
-            if (curr.foreground != null)
-               last.foreground = curr.foreground;
-            if (curr.background != null)
-               last.background = curr.background;
-            if (curr.underline != last.underline)
-               last.underline = curr.underline;
-            if (curr.fontStyle != last.fontStyle)
-               last.fontStyle = curr.fontStyle;
-            continue;
-         }
-         
-         if (last.start + last.length == curr.start + curr.length)
-         {
-            // carry through font styles until the break at length
-            if (last.underline)
-               curr.underline = true;
-            if (last.fontStyle != SWT.NORMAL && curr.fontStyle == SWT.NORMAL)
-               curr.fontStyle = last.fontStyle;
+            if (ii == 0)
+            {
+               condensedRanges.add(ranges.get(0));
+               continue;
+            }
             
-            // carry through colors on nulls
-            if (curr.foreground == null)
-               curr.foreground = last.foreground;
-            if (curr.background == null)
-               curr.background = last.background;
+            StyleRange last = condensedRanges.get(condensedRanges.size() - 1);
+            StyleRange curr = ranges.get(ii);
+            
+            if (last.start == curr.start)
+            {
+               if (curr.foreground != null)
+                  last.foreground = curr.foreground;
+               if (curr.background != null)
+                  last.background = curr.background;
+               if (curr.underline != last.underline)
+                  last.underline = curr.underline;
+               if (curr.fontStyle != last.fontStyle)
+                  last.fontStyle = curr.fontStyle;
+               continue;
+            }
+            
+            if (last.start + last.length == curr.start + curr.length)
+            {
+               // carry through font styles until the break at length
+               if (last.underline)
+                  curr.underline = true;
+               if (last.fontStyle != SWT.NORMAL && curr.fontStyle == SWT.NORMAL)
+                  curr.fontStyle = last.fontStyle;
+               
+               // carry through colors on nulls
+               if (curr.foreground == null)
+                  curr.foreground = last.foreground;
+               if (curr.background == null)
+                  curr.background = last.background;
+            }
+            condensedRanges.add(curr);
          }
-         condensedRanges.add(curr);
-      }
-      // send the string to the listeners
-      lineBuffer = MudFrame.getListener().processOutput(lineBuffer, condensedRanges);
-      
-      // formatters could choose not to print this string by sending null back
-      if (lineBuffer == null)
-      {
+         // send the string to the listeners
+         lineBuffer = MudFrame.getInstance().getListener().processOutput(lineBuffer, condensedRanges);
+         
+         // formatters could choose not to print this string by sending null back
+         if (lineBuffer == null)
+         {
+            lineBuffer = "";
+            lbIdx = 0;
+            ranges.clear();
+            return;
+         }
+         
+         // process style ranges if they exist and can be applied
+         if (lineBuffer.length() > 0 && condensedRanges.size() != 0)
+         {
+            // change the length of each range that hasn't been terminated
+            for (StyleRange r : ranges)
+            {
+               if (r.length == -1)
+               {
+                  r.length = lineBuffer.length() - r.start - 1;
+               }
+            }
+         }
+   
+         // and write
+         MudFrame.getInstance().writeToTextBox(lineBuffer, condensedRanges);
+   
+         // reset the line buffer and the ranges. We have the option to continue with
+         // the "continuedSequnces" here, but I'm currently opting to end all sequences
+         // with line termination (there are times where an escape sequence is missed, 
+         // and then the entire screen ends up staying a color we don't want)
          lineBuffer = "";
          lbIdx = 0;
          ranges.clear();
-         return;
       }
-      
-      // process style ranges if they exist and can be applied
-      if (lineBuffer.length() > 0 && condensedRanges.size() != 0)
-      {
-         // change the length of each range that hasn't been terminated
-         for (StyleRange r : ranges)
-         {
-            if (r.length == -1)
-            {
-               r.length = lineBuffer.length() - r.start - 1;
-            }
-         }
-      }
-
-      // and write
-      MudFrame.writeToTextBox(lineBuffer, condensedRanges);
-
-      // reset the line buffer and the ranges. We have the option to continue with
-      // the "continuedSequnces" here, but I'm currently opting to end all sequences
-      // with line termination (there are times where an escape sequence is missed, 
-      // and then the entire screen ends up staying a color we don't want)
-      lineBuffer = "";
-      lbIdx = 0;
-      ranges.clear();
    }
 
    /**
@@ -300,64 +322,67 @@ public class AnsiParser
     * @param ranges
     * @param idx
     */
-   private static void setStyle(int sequence, int idx)
+   private void setStyle(int sequence, int idx, List<StyleRange> ranges)
    {
-      // ignore bad sequences
-      if (sequence < 0)
+      synchronized(this)
       {
-         return;
-      }
-      else if (sequence == 0)
-      {
-         // set the length for all non-terminated sequences and return
-         for (StyleRange range : ranges)
+         // ignore bad sequences
+         if (sequence < 0)
          {
-            if (range.length == -1)
-            {
-               range.length = idx - range.start;
-            }
+            return;
          }
-         return;
+         else if (sequence == 0)
+         {
+            // set the length for all non-terminated sequences and return
+            for (StyleRange range : ranges)
+            {
+               if (range.length == -1)
+               {
+                  range.length = idx - range.start;
+               }
+            }
+            return;
+         }
+   
+         // Create the new style range for this sequence
+         StyleRange range = new StyleRange();
+         range.start = idx; // relative to the string, not the bytes or the screen
+         range.length = -1;
+   
+         switch (sequence)
+         {
+            case 1: // bold
+               range.fontStyle = SWT.BOLD;
+               break;
+            case 4: // underline
+               range.underline = true;
+               break;
+            case 30: // foreground
+            case 31:
+            case 32:
+            case 33:
+            case 34:
+            case 35:
+            case 36:
+            case 37:
+               range.foreground = MudFrame.colors[sequence - 30];
+               break;
+            case 40:
+            case 41:
+            case 42:
+            case 43:
+            case 44:
+            case 45:
+            case 46:
+            case 47:
+               range.background = MudFrame.colors[sequence - 40];
+               break;
+            default:
+               return; // do nothing
+         }
+         
+         ranges.add(range);
       }
-
-      // Create the new style range for this sequence
-      StyleRange range = new StyleRange();
-      range.start = idx; // relative to the string, not the bytes or the screen
-      range.length = -1;
-
-      switch (sequence)
-      {
-         case 1: // bold
-            range.fontStyle = SWT.BOLD;
-            break;
-         case 4: // underline
-            range.underline = true;
-            break;
-         case 30: // foreground
-         case 31:
-         case 32:
-         case 33:
-         case 34:
-         case 35:
-         case 36:
-         case 37:
-            range.foreground = MudFrame.colors[sequence - 30];
-            break;
-         case 40:
-         case 41:
-         case 42:
-         case 43:
-         case 44:
-         case 45:
-         case 46:
-         case 47:
-            range.background = MudFrame.colors[sequence - 40];
-            break;
-         default:
-            return; // do nothing
-      }
-      
-      ranges.add(range);
    }
 
    /**

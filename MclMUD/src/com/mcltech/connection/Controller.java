@@ -97,7 +97,7 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Command not sent {" + line + "}", e);
-         MudFrame.writeToTextBox("\n\n***Could not send command! Disconnecting. Error is logged.***\n\n", null);
+         MudFrame.getInstance().writeToTextBox("\n\n***Could not send command! Disconnecting. Error is logged.***\n\n", null);
          disconnect(); // clean up
          return false;
       }
@@ -116,7 +116,7 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       {
          log.add(Level.INFO,
                "Could not connect to {" + hostname + ":" + port + "}. A connection is already in use.");
-         MudFrame.writeToTextBox(
+         MudFrame.getInstance().writeToTextBox(
                "\n\n***Could not connect to {" + hostname + ":" + port + "}. A connection is already in use.***\n\n", null);
          return false;
       }
@@ -128,7 +128,7 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Error connecting to {" + hostname + ":" + port + "}", e);
-         MudFrame.writeToTextBox(
+         MudFrame.getInstance().writeToTextBox(
                "\n\n***Could not connect to {" + hostname + ":" + port + "}. Error is logged.***\n\n", null);
          return false;
       }
@@ -155,18 +155,18 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
       {
          client.disconnect();
          log.add(Level.INFO, "Disconnect.");
-         MudFrame.writeToTextBox("\nDisconnected.\n", null);
+         MudFrame.getInstance().writeToTextBox("\nDisconnected.\n", null);
       }
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Could not disconnect: ", e);
-         MudFrame.writeToTextBox("\n\n***Could not disconnect. Error is logged.***\n\n", null);
+         MudFrame.getInstance().writeToTextBox("\n\n***Could not disconnect. Error is logged.***\n\n", null);
          isConnected = false;
          return false;
       }
 
       isConnected = false;
-      MudFrame.stop();
+      MudFrame.getInstance().stop();
       return true;
    }
 
@@ -187,30 +187,30 @@ public class Controller implements Runnable //, TelnetNotificationHandler, Telne
             // stream is finished sending (for now), print to screen
             if (in.available() == 0)
             {
-               AnsiParser.flush();
+               AnsiParser.getInstance().flush();
             }
             ret_read = in.read(buff);
             if (ret_read > 0)
             {
-               AnsiParser.parseBytes(buff, ret_read);
+               AnsiParser.getInstance().parseBytes(buff, ret_read);
                // System.out.print(new String(buff, 0, ret_read, "cp1252")); //IBM850,cp1252);
             }
             // read zero bytes. Flush the output to the screen.
             else if (ret_read == 0)
             {
-               AnsiParser.flush();
+               AnsiParser.getInstance().flush();
             }
          }
          while (ret_read >= 0 && isConnected);
 
          in.close();
          isConnected = false;
-         MudFrame.writeToTextBox("Disconnected.", null);
+         MudFrame.getInstance().writeToTextBox("Disconnected.", null);
       }
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Could no longer read connection. ", e);
-         MudFrame.writeToTextBox("\n\n***Could no longer read connection. Disconnecting. Error is logged.***\n\n", null);
+         MudFrame.getInstance().writeToTextBox("\n\n***Could no longer read connection. Disconnecting. Error is logged.***\n\n", null);
          disconnect();
       }
    }

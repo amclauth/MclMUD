@@ -38,89 +38,30 @@ import com.mcltech.base.MudLogger;
 public class MudFrame
 {
    Shell shell;
-   private static Display display;
+   private Display display;
    static final MudLogger log = MudLogger.getInstance();
-   static StyledText outputText;
+   StyledText outputText;
    Text inputText;
-   static Controller controller;
-   static AIListener ai;
+   Controller controller;
+   AIListener ai;
    List<String> commandStack = new LinkedList<>();
-   static int COMMAND_STACK_SIZE;
+   int COMMAND_STACK_SIZE;
    int commandStackIdx = -1;
    public static Color[] colors = new Color[10];
    int fontSize = 12;
-
-   public MudFrame()
+   
+   // singleton class holder pattern
+   private static final class holder
    {
-
+      static final MudFrame INSTANCE = new MudFrame();
    }
 
-   /**
-    * Print a line of text to the output screen. This will accept a string input and is formatted by the style
-    * ranges. It will also clear 10 lines of the output screen at a time if over 1000 lines of text are in the
-    * screen to keep from overflowing any buffers.
-    * 
-    * @param line
-    * @param ranges (start should be set with respect to the string itself)
-    */
-   public static void writeToTextBox(String line, List<StyleRange> ranges)
+   public static MudFrame getInstance()
    {
-      List<StyleRange> rangeCopy = new ArrayList<>();
-      if (ranges != null)
-         rangeCopy.addAll(ranges);
-
-      if (display.isDisposed())
-         return;
-
-      display.asyncExec(new Runnable()
-      {
-         @Override
-         public void run()
-         {
-            int caret = outputText.getCharCount();
-            outputText.append(line);
-            log.add(Level.INFO, line);
-            for (StyleRange range : rangeCopy)
-            {
-               range.start += caret;
-               try
-               {
-                  outputText.setStyleRange(range);
-               }
-               catch (@SuppressWarnings("unused")
-               IllegalArgumentException e)
-               {
-                  // don't die if this happens somehow (update while trimming lines from above)
-               }
-            }
-
-            while (outputText.getLineCount() > 1000 || (outputText.getTextLimit() > 0
-                  && outputText.getCharCount() > outputText.getTextLimit() - 1000))
-            {
-               int offset = outputText.getOffsetAtLine(10);
-               if (offset < outputText.getCharCount() && offset > 0)
-                  outputText.replaceTextRange(0, offset, "");
-            }
-         }
-      });
+      return holder.INSTANCE;
    }
 
-   public void updateTitle(String title)
-   {
-      // TODO this sometimes fails when closing down ... might check that display is active
-      Display.getDefault().asyncExec(new Runnable()
-      {
-         @Override
-         public void run()
-         {
-            if (title == null || title.trim().length() == 0)
-               shell.setText("MclMUD Client");
-            else
-               shell.setText("MclMUD Client " + title.trim());
-         }
-      });
-   }
-
+   MudFrame() {}
    /**
     * Create the various elements and start initialize the controller and AnsiParser
     */
@@ -143,7 +84,12 @@ public class MudFrame
          log.add(Level.WARNING, "Couldn't convert COMMANDSTACKSIZE to an integer from the config file.");
          COMMAND_STACK_SIZE = 20;
       }
-      display = new Display();
+      
+      if (display == null)
+         display = new Display();
+      if (shell == null)
+         shell = new Shell(display);
+      
       // set up the system colors
       colors[0] = display.getSystemColor(SWT.COLOR_BLACK);
       colors[1] = display.getSystemColor(SWT.COLOR_RED);
@@ -168,7 +114,7 @@ public class MudFrame
          log.add(Level.INFO, "Couldn't get font size from configger");
       }
       
-      shell = new Shell(display);
+      
       GridLayout gridLayout = new GridLayout();
       gridLayout.numColumns = 1;
       shell.setLayout(gridLayout);
@@ -179,7 +125,7 @@ public class MudFrame
       createInputScreen();
 
       ai = new AIListener(this, "Basic");
-      AnsiParser.init(display);
+      AnsiParser.getInstance().init(display);
       controller = new Controller();
       controller.init();
 
@@ -245,9 +191,77 @@ public class MudFrame
    }
 
    /**
+    * Print a line of text to the output screen. This will accept a string input and is formatted by the style
+    * ranges. It will also clear 10 lines of the output screen at a time if over 1000 lines of text are in the
+    * screen to keep from overflowing any buffers.
+    * 
+    * @param line
+    * @param ranges (start should be set with respect to the string itself)
+    */
+   public void writeToTextBox(String line, List<StyleRange> ranges)
+   {
+      List<StyleRange> rangeCopy = new ArrayList<>();
+      if (ranges != null)
+         rangeCopy.addAll(ranges);
+
+      if (display.isDisposed())
+         return;
+
+      display.asyncExec(new Runnable()
+      {
+         @Override
+         public void run()
+         {
+            int caret = outputText.getCharCount();
+            outputText.append(line);
+            log.add(Level.INFO, line);
+            for (StyleRange range : rangeCopy)
+            {
+               range.start += caret;
+               try
+               {
+                  outputText.setStyleRange(range);
+               }
+               catch (@SuppressWarnings("unused")
+               IllegalArgumentException e)
+               {
+                  // don't die if this happens somehow (update while trimming lines from above)
+               }
+            }
+
+            while (outputText.getLineCount() > 1000 || (outputText.getTextLimit() > 0
+                  && outputText.getCharCount() > outputText.getTextLimit() - 1000))
+            {
+               int offset = outputText.getOffsetAtLine(10);
+               if (offset < outputText.getCharCount() && offset > 0)
+                  outputText.replaceTextRange(0, offset, "");
+            }
+         }
+      });
+   }
+
+   public void updateTitle(String title)
+   {
+      if (display.isDisposed())
+         return;
+
+      display.asyncExec(new Runnable()
+      {
+         @Override
+         public void run()
+         {
+            if (title == null || title.trim().length() == 0)
+               shell.setText("MclMUD Client");
+            else
+               shell.setText("MclMUD Client " + title.trim());
+         }
+      });
+   }
+   
+   /**
     * Stop ongoing processes in the ai and controller
     */
-   public static void stop()
+   public void stop()
    {
       ai.deregister();
       controller.disconnect();
@@ -377,7 +391,7 @@ public class MudFrame
                   inputText.selectAll();
                   return;
                }
-               MudFrame.writeCommand(input);
+               writeCommand(input);
                
                // keep the text there and selected, so just pressing enter
                // repeats the last command, but you can type over it.
@@ -394,7 +408,7 @@ public class MudFrame
       });
    }
    
-   public static void writeCommand(String input)
+   public void writeCommand(String input)
    {
       List<String> commands = ai.processCommand(input);
       if (commands != null && commands.size() > 0)
@@ -584,8 +598,13 @@ public class MudFrame
     * 
     * @return
     */
-   public static AIListener getListener()
+   public AIListener getListener()
    {
       return ai;
+   }
+
+   public Display getDisplay()
+   {
+      return display;
    }
 }
