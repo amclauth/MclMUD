@@ -3,6 +3,8 @@ package com.mcltech.ai.mume;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
@@ -32,7 +34,7 @@ public class MumeInfoPanel implements AIInterface
    Display display;
    StyledText roomInfoText;
    StyledText timeText;
-   
+
    Color RED;
    Color DARK_RED;
    Color BLUE;
@@ -41,15 +43,22 @@ public class MumeInfoPanel implements AIInterface
    Color DARK_GREEN;
    Color GRAY;
    Color BLACK;
-   
+
+   final Pattern scPattern = Pattern
+         .compile("\\<status>(\\d+)\\<\\/status>\\/\\<status>(\\d+)\\<\\/status> hits?, "
+               + "\\<status>(\\d+)\\<\\/status>\\/\\<status>(\\d+)\\<\\/status> mana, and "
+               + "\\<status>(\\d+)\\<\\/status>\\/\\<status>(\\d+)\\<\\/status> move");
+
    boolean isShown = false;
-   
+
    int hp_low, hp_high, hp_max, hp_wimpy;
    int mv_low, mv_high, mv_max;
    int mana_low, mana_high, mana_max;
-   
+
    Canvas hpMpManaCanvas;
    
+   private Matcher matcher;
+
    // singleton class holder pattern
    private static final class holder
    {
@@ -60,8 +69,8 @@ public class MumeInfoPanel implements AIInterface
    {
       return holder.INSTANCE;
    }
-   
-   //TODO
+
+   // TODO
    // day / night / time / time till next
    // xp / tp
    // text above bars with numbers for hp / tp / mv / mana / xp / etc
@@ -76,13 +85,13 @@ public class MumeInfoPanel implements AIInterface
       mana_max = 100;
       hp_low = 50;
       hp_high = 70;
-      hp_wimpy=30;
+      hp_wimpy = 30;
       mv_low = 40;
       mv_high = 60;
       mana_low = 30;
       mana_high = 80;
    }
-   
+
    public boolean isShown()
    {
       return isShown;
@@ -95,8 +104,95 @@ public class MumeInfoPanel implements AIInterface
       {
          updateRoomText();
       }
+      else if (line.contains("</status> mana, and <status>"))
+      {
+         matcher = scPattern.matcher(line);
+         // if (m.find() && m.groupCount() > 2)
+         if (matcher.find() && matcher.groupCount() == 6)
+         {
+            scoreStatMatch(matcher);
+         }
+      }
+      else if (line.contains("You will flee if your hit points go below <status>"))
+      {
+         int idx1 = line.indexOf("You will flee if your hit points go below <status>");
+         int idx2 = line.indexOf("</status>",idx1+50);
+         if (idx2 > idx1)
+         {
+            try {
+               hp_wimpy = Integer.valueOf(line.substring(idx1+50,idx2)).intValue();
+               doHpMpManaRedraw();
+            }
+            catch (@SuppressWarnings("unused") NumberFormatException e)
+            {
+               log.add(Level.WARNING,
+                     "Couldn't convert " + line + " to wimpy value.");
+            }
+         }
+      }
+      else if (line.contains("Wimpy set to: "))
+      {
+         int idx1 = line.indexOf("Wimpy set to: ");
+         int idx2 = line.trim().length();
+         if (idx2 > idx1)
+         {
+            try {
+               hp_wimpy = Integer.valueOf(line.substring(idx1+14,idx2)).intValue();
+               doHpMpManaRedraw();
+            }
+            catch (@SuppressWarnings("unused") NumberFormatException e)
+            {
+               log.add(Level.WARNING,
+                     "Couldn't convert " + line + " to wimpy value.");
+            }
+         }
+      }
    }
    
+   private void scoreStatMatch(Matcher m)
+   {
+      try
+      {
+         int val = Integer.valueOf(m.group(1)).intValue();
+         int max = Integer.valueOf(m.group(2)).intValue();
+         hp_low = val;
+         hp_high = val;
+         hp_max = max;
+
+         val = Integer.valueOf(m.group(3)).intValue();
+         max = Integer.valueOf(m.group(4)).intValue();
+         mana_low = val;
+         mana_high = val;
+         mana_max = max;
+
+         val = Integer.valueOf(m.group(5)).intValue();
+         max = Integer.valueOf(m.group(6)).intValue();
+         mv_low = val;
+         mv_high = val;
+         mv_max = max;
+
+         doHpMpManaRedraw();
+      }
+      catch (@SuppressWarnings("unused")
+      NumberFormatException e)
+      {
+         log.add(Level.WARNING,
+               "Couldn't convert " + m.group(0) + " to numbers.");
+      }
+   }
+   
+   private void doHpMpManaRedraw()
+   {
+      display.asyncExec(new Runnable()
+      {
+         @Override
+         public void run()
+         {
+            hpMpManaCanvas.redraw();
+         }
+      });
+   }
+
    public void updateRoomText()
    {
       if (roomInfoText != null)
@@ -104,12 +200,14 @@ public class MumeInfoPanel implements AIInterface
          display.asyncExec(new Runnable()
          {
             List<StyleRange> ranges = new ArrayList<>();
-            
+
             @Override
             public void run()
             {
                ranges.clear();
-               roomInfoText.setText(MumeAI.currentRoom.getName() + "\n" + MumeAI.currentRoom.getExitsString());
+               String rname = MumeAI.currentRoom.getName();
+               String exits = MumeAI.currentRoom.getExitsString();
+               roomInfoText.setText(rname + "\n" + (exits == null ? "" : exits));
                MumeFormatter.formatExits(MumeAI.currentRoom.getExitsString(), ranges);
                int len = MumeAI.currentRoom.getName().length() + 1;
                for (StyleRange r : ranges)
@@ -121,7 +219,7 @@ public class MumeInfoPanel implements AIInterface
          });
       }
    }
-   
+
    public void updateTime(String time, String dayNight, String changeTime, String till, String dawnDusk)
    {
       if (timeText != null)
@@ -129,7 +227,7 @@ public class MumeInfoPanel implements AIInterface
          display.asyncExec(new Runnable()
          {
             StyleRange[] ranges = new StyleRange[2];
-            
+
             @Override
             public void run()
             {
@@ -137,9 +235,9 @@ public class MumeInfoPanel implements AIInterface
                ranges[1] = new StyleRange();
                ranges[0].underline = true;
                ranges[1].underline = true;
-               
-               //  DAY          DUSK
-               //  10:54    19:00 (10:06)    
+
+               // DAY DUSK
+               // 10:54 19:00 (10:06)
                StringBuilder text = new StringBuilder();
                text.append("  ");
                ranges[0].start = 2;
@@ -166,7 +264,7 @@ public class MumeInfoPanel implements AIInterface
          });
       }
    }
-   
+
    private void createHpMpManaBars()
    {
       hpMpManaCanvas = new Canvas(shell, SWT.NO_REDRAW_RESIZE);
@@ -177,7 +275,7 @@ public class MumeInfoPanel implements AIInterface
       gridData.heightHint = 30;
 
       hpMpManaCanvas.setLayoutData(gridData);
-      
+
       hpMpManaCanvas.addPaintListener(new PaintListener()
       {
          @Override
@@ -186,38 +284,43 @@ public class MumeInfoPanel implements AIInterface
             int cHeight = hpMpManaCanvas.getClientArea().height;
             int cWidth = hpMpManaCanvas.getClientArea().width;
             e.gc.setBackground(BLACK);
-            e.gc.fillRectangle(0,0,cWidth,cHeight);
+            e.gc.fillRectangle(0, 0, cWidth, cHeight);
             e.gc.setForeground(GRAY);
             e.gc.setBackground(DARK_RED);
-            e.gc.fillRectangle(0, 0, (int)(1.0*hp_high/hp_max * cWidth), cHeight/3-1);
+            e.gc.fillRectangle(0, 0, (int) (1.0 * hp_high / hp_max * cWidth), cHeight / 3 - 1);
             e.gc.setBackground(RED);
-            e.gc.fillRectangle(0, 0, (int)(1.0*hp_low/hp_max * cWidth), cHeight/3-1);
-            e.gc.drawRectangle(0, 0, (int)(1.0*hp_low/hp_max * cWidth), cHeight/3-1);
-            e.gc.drawLine((int)(1.0*hp_wimpy/hp_max * cWidth), 0, (int)(1.0*hp_wimpy/hp_max * cWidth), cHeight/3-1);
-            e.gc.drawRectangle(0, 0, (int)(1.0*hp_high/hp_max * cWidth), cHeight/3-1);
-            
+            e.gc.fillRectangle(0, 0, (int) (1.0 * hp_low / hp_max * cWidth), cHeight / 3 - 1);
+            e.gc.drawRectangle(0, 0, (int) (1.0 * hp_low / hp_max * cWidth), cHeight / 3 - 1);
+            e.gc.drawLine((int) (1.0 * hp_wimpy / hp_max * cWidth), 0,
+                  (int) (1.0 * hp_wimpy / hp_max * cWidth), cHeight / 3 - 1);
+            e.gc.drawRectangle(0, 0, (int) (1.0 * hp_high / hp_max * cWidth), cHeight / 3 - 1);
+
             e.gc.setBackground(DARK_GREEN);
-            e.gc.fillRectangle(0, cHeight/3, (int)(1.0*mv_high/mv_max * cWidth), cHeight/3-1);
+            e.gc.fillRectangle(0, cHeight / 3, (int) (1.0 * mv_high / mv_max * cWidth), cHeight / 3 - 1);
             e.gc.setBackground(GREEN);
-            e.gc.fillRectangle(0, cHeight/3, (int)(1.0*mv_low/mv_max * cWidth), cHeight/3-1);
-            e.gc.drawRectangle(0, cHeight/3, (int)(1.0*mv_low/mv_max * cWidth), cHeight/3-1);
-            e.gc.drawRectangle(0, cHeight/3, (int)(1.0*mv_high/mv_max * cWidth), cHeight/3-1);
+            e.gc.fillRectangle(0, cHeight / 3, (int) (1.0 * mv_low / mv_max * cWidth), cHeight / 3 - 1);
+            e.gc.drawRectangle(0, cHeight / 3, (int) (1.0 * mv_low / mv_max * cWidth), cHeight / 3 - 1);
+            e.gc.drawRectangle(0, cHeight / 3, (int) (1.0 * mv_high / mv_max * cWidth), cHeight / 3 - 1);
 
             e.gc.setBackground(DARK_BLUE);
-            e.gc.fillRectangle(0, 2*cHeight/3, (int)(1.0*mana_high/mana_max * cWidth), cHeight/3-1);
+            e.gc.fillRectangle(0, 2 * cHeight / 3, (int) (1.0 * mana_high / mana_max * cWidth),
+                  cHeight / 3 - 1);
             e.gc.setBackground(BLUE);
-            e.gc.fillRectangle(0, 2*cHeight/3, (int)(1.0*mana_low/mana_max * cWidth), cHeight/3-1);
-            e.gc.drawRectangle(0, 2*cHeight/3, (int)(1.0*mana_low/mana_max * cWidth), cHeight/3-1);
-            e.gc.drawRectangle(0, 2*cHeight/3, (int)(1.0*mana_high/mana_max * cWidth), cHeight/3-1);
+            e.gc.fillRectangle(0, 2 * cHeight / 3, (int) (1.0 * mana_low / mana_max * cWidth),
+                  cHeight / 3 - 1);
+            e.gc.drawRectangle(0, 2 * cHeight / 3, (int) (1.0 * mana_low / mana_max * cWidth),
+                  cHeight / 3 - 1);
+            e.gc.drawRectangle(0, 2 * cHeight / 3, (int) (1.0 * mana_high / mana_max * cWidth),
+                  cHeight / 3 - 1);
          }
       });
    }
-   
+
    private void createTimers()
    {
-      
+
    }
-   
+
    private void createRoomInfoBox()
    {
       GridData gridData = new GridData();
@@ -232,7 +335,7 @@ public class MumeInfoPanel implements AIInterface
       roomInfoText.setBackground(display.getSystemColor(SWT.COLOR_BLACK));
       roomInfoText.setForeground(display.getSystemColor(SWT.COLOR_WHITE));
    }
-   
+
    private void createTimeBox()
    {
       GridData gridData = new GridData();
@@ -252,19 +355,21 @@ public class MumeInfoPanel implements AIInterface
    public void start()
    {
       display = MudFrame.getInstance().getDisplay();
-      try {
+      try
+      {
          int newFontSize = Integer.valueOf(Configger.getProperty("FONTSIZE", "12")).intValue();
          if (newFontSize != fontSize)
          {
             fontSize = newFontSize;
-            Configger.setProperty("FONTSIZE", fontSize+"");
+            Configger.setProperty("FONTSIZE", fontSize + "");
          }
       }
-      catch (@SuppressWarnings("unused") NumberFormatException e)
+      catch (@SuppressWarnings("unused")
+      NumberFormatException e)
       {
          log.add(Level.INFO, "Couldn't get font size from configger");
       }
-      
+
       RED = display.getSystemColor(SWT.COLOR_RED);
       DARK_RED = display.getSystemColor(SWT.COLOR_DARK_RED);
       BLUE = display.getSystemColor(SWT.COLOR_BLUE);
@@ -273,7 +378,7 @@ public class MumeInfoPanel implements AIInterface
       DARK_GREEN = display.getSystemColor(SWT.COLOR_DARK_GREEN);
       GRAY = display.getSystemColor(SWT.COLOR_GRAY);
       BLACK = display.getSystemColor(SWT.COLOR_BLACK);
-      
+
       shell = new Shell(display);
       GridLayout gridLayout = new GridLayout();
       gridLayout.numColumns = 1;
@@ -301,7 +406,7 @@ public class MumeInfoPanel implements AIInterface
       createTimers();
       createTimeBox();
       createRoomInfoBox();
-      
+
       shell.setLocation(xloc, yloc);
       shell.setSize(width, height);
 
@@ -347,7 +452,7 @@ public class MumeInfoPanel implements AIInterface
    @Override
    public void stop()
    {
-      
+
    }
 
    @Override

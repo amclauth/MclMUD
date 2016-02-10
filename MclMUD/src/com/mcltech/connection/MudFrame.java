@@ -49,7 +49,7 @@ public class MudFrame
    int commandStackIdx = -1;
    private Color[] colors;
    int fontSize = 12;
-   
+
    // singleton class holder pattern
    private static final class holder
    {
@@ -61,7 +61,10 @@ public class MudFrame
       return holder.INSTANCE;
    }
 
-   MudFrame() {}
+   MudFrame()
+   {
+   }
+
    /**
     * Create the various elements and start initialize the controller and AnsiParser
     */
@@ -79,17 +82,18 @@ public class MudFrame
             COMMAND_STACK_SIZE = Integer.valueOf(Configger.getProperty("COMMANDSTACKSIZE", "20")).intValue();
          }
       }
-      catch (@SuppressWarnings("unused") NumberFormatException e)
+      catch (@SuppressWarnings("unused")
+      NumberFormatException e)
       {
          log.add(Level.WARNING, "Couldn't convert COMMANDSTACKSIZE to an integer from the config file.");
          COMMAND_STACK_SIZE = 20;
       }
-      
+
       if (display == null)
          display = new Display();
       if (shell == null)
          shell = new Shell(display);
-      
+
       if (colors == null)
       {
          colors = new Color[9];
@@ -104,21 +108,22 @@ public class MudFrame
          colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
          colors[8] = display.getSystemColor(SWT.COLOR_DARK_GREEN);
       }
-      
-      try {
+
+      try
+      {
          int newFontSize = Integer.valueOf(Configger.getProperty("FONTSIZE", "12")).intValue();
          if (newFontSize != fontSize)
          {
             fontSize = newFontSize;
-            Configger.setProperty("FONTSIZE", fontSize+"");
+            Configger.setProperty("FONTSIZE", fontSize + "");
          }
       }
-      catch (@SuppressWarnings("unused") NumberFormatException e)
+      catch (@SuppressWarnings("unused")
+      NumberFormatException e)
       {
          log.add(Level.INFO, "Couldn't get font size from configger");
       }
-      
-      
+
       GridLayout gridLayout = new GridLayout();
       gridLayout.numColumns = 1;
       shell.setLayout(gridLayout);
@@ -242,7 +247,7 @@ public class MudFrame
          }
       });
    }
-   
+
    /**
     * Stop ongoing processes in the ai and controller
     */
@@ -251,9 +256,10 @@ public class MudFrame
       ai.deregister();
       controller.disconnect();
    }
-   
+
    /**
     * Increase or decrease the fontsize in steps
+    * 
     * @param increase
     */
    void setFontSize(int increase)
@@ -263,7 +269,7 @@ public class MudFrame
       fontSize += increase;
       if (fontSize < 1)
          fontSize = 1;
-      Configger.setProperty("FONTSIZE", fontSize+"");
+      Configger.setProperty("FONTSIZE", fontSize + "");
       Font mono = new Font(display, "Courier", fontSize, SWT.NONE);
       outputText.setFont(mono);
       inputText.setFont(mono);
@@ -377,22 +383,25 @@ public class MudFrame
                   return;
                }
                writeCommand(input);
-               
+
                // keep the text there and selected, so just pressing enter
                // repeats the last command, but you can type over it.
                inputText.selectAll();
 
-               commandStack.add(input);
-               while (commandStack.size() > COMMAND_STACK_SIZE)
+               if (commandStack.size() > 0 && !input.equals(commandStack.get(commandStack.size() - 1)))
                {
-                  commandStack.remove(0);
+                  commandStack.add(input);
+                  while (commandStack.size() > COMMAND_STACK_SIZE)
+                  {
+                     commandStack.remove(0);
+                  }
+                  commandStackIdx = commandStack.size() - 1;
                }
-               commandStackIdx = commandStack.size() - 1;
             }
          }
       });
    }
-   
+
    public void writeCommand(String input)
    {
       List<String> commands = ai.processCommand(input);
@@ -482,14 +491,14 @@ public class MudFrame
             inputText.setFocus();
          }
       });
-      
+
       // layout main item
       MenuItem layoutMenuItem = new MenuItem(menuBar, SWT.CASCADE);
       layoutMenuItem.setText("&Layout");
 
       Menu layoutMenu = new Menu(shell, SWT.DROP_DOWN);
       layoutMenuItem.setMenu(layoutMenu);
-      
+
       MenuItem fontIncItem = new MenuItem(layoutMenu, SWT.PUSH);
       fontIncItem.setText("&Increase Font");
       fontIncItem.addSelectionListener(new SelectionAdapter()
@@ -501,7 +510,7 @@ public class MudFrame
             inputText.setFocus();
          }
       });
-      
+
       MenuItem fontDecItem = new MenuItem(layoutMenu, SWT.PUSH);
       fontDecItem.setText("&Decrease Font");
       fontDecItem.addSelectionListener(new SelectionAdapter()
@@ -592,9 +601,10 @@ public class MudFrame
    {
       return display;
    }
-   
+
    /**
     * Get the color with this index
+    * 
     * @param idx
     * @return
     */

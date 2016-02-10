@@ -5,12 +5,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.swt.custom.StyleRange;
 
 import com.mcltech.ai.AIInterface;
+import com.mcltech.base.MudLogger;
 import com.mcltech.connection.Configger;
 import com.mcltech.connection.MudFrame;
 
@@ -23,6 +25,7 @@ import com.mcltech.connection.MudFrame;
  */
 public class MumeTime implements AIInterface
 {
+   private static MudLogger log = MudLogger.getInstance();
    MudFrame frame;
    
    Timer clockTimer;
@@ -106,7 +109,7 @@ public class MumeTime implements AIInterface
          }
          catch (@SuppressWarnings("unused") NumberFormatException e)
          {
-            System.out.println("Couldn't convert {" + monthMatcher.group(1) + "} to a day");
+            log.add(Level.WARNING,"Couldn't convert {" + monthMatcher.group(1) + "} to a day");
             return;
          }
          String monthName = monthMatcher.group(2);
@@ -137,7 +140,7 @@ public class MumeTime implements AIInterface
       }
       catch (@SuppressWarnings("unused") NumberFormatException e)
       {
-         System.out.println("Couldn't turn {" + m + "} into a long for setCalendar.");
+         log.add(Level.WARNING,"Couldn't turn {" + m + "} into a long for setCalendar.");
       }
    }
    
@@ -174,7 +177,7 @@ public class MumeTime implements AIInterface
     */
    void setClock(String line)
    {
-      String time = line.substring(20,line.length()-1);
+      String time = line.substring(20).trim();
       // t is the number of seconds (real time) from midnight
       int t = 0;
       int h = 0;
@@ -207,7 +210,7 @@ public class MumeTime implements AIInterface
       }
       catch (@SuppressWarnings("unused") NumberFormatException e)
       {
-         System.out.println("Nope. Couldn't convert {" + time + "} to to integers.");
+         log.add(Level.WARNING,"Nope. Couldn't convert {" + time + "} to to integers.");
          return;
       }
       long midnight = System.currentTimeMillis() / 1000 - t;
@@ -229,7 +232,7 @@ public class MumeTime implements AIInterface
       }
       catch (@SuppressWarnings("unused") NumberFormatException e)
       {
-         System.out.println("Couldn't turn {" + m + "} into a long for setClock.");
+         log.add(Level.WARNING,"Couldn't turn {" + m + "} into a long for setClock.");
       }
    }
    
@@ -339,22 +342,43 @@ public class MumeTime implements AIInterface
       {
          setClock(line);
       }
-      else if (line.contains("The day has begun."))
+      else if (line.startsWith("<weather>") && line.endsWith("</weather>"))
       {
-         if (month > -1)
+         if (line.contains("The day has begun."))
          {
-            int currentHour = monthMap.get(Integer.valueOf(month)+"").dawn-1;
-            setClock(System.currentTimeMillis() / 1000 - currentHour*60);
-            System.out.println(line);
+            if (month > -1)
+            {
+               int currentHour = monthMap.get(Integer.valueOf(month)+"").dawn+1;
+               setClock(System.currentTimeMillis() / 1000 - currentHour*60);
+               System.out.println(line);
+            }
          }
-      }
-      else if (line.contains("The night has begun."))
-      {
-         if (month > -1)
+         else if (line.contains("The night has begun."))
          {
-            int currentHour = monthMap.get(Integer.valueOf(month)+"").dusk;
-            setClock(System.currentTimeMillis() / 1000 - currentHour*60);
-            System.out.println(line);
+            if (month > -1)
+            {
+               int currentHour = monthMap.get(Integer.valueOf(month)+"").dusk;
+               setClock(System.currentTimeMillis() / 1000 - currentHour*60);
+               System.out.println(line);
+            }
+         }
+         else if (line.contains("The sun rises") || line.contains("sunrise"))
+         {
+            if (month > -1)
+            {
+               int currentHour = monthMap.get(Integer.valueOf(month)+"").dawn;
+               setClock(System.currentTimeMillis() / 1000 - currentHour*60);
+               System.out.println(line);
+            }
+         }
+         else if (line.contains("sunset") || line.contains("the sun sets"))
+         {
+            if (month > -1)
+            {
+               int currentHour = monthMap.get(Integer.valueOf(month)+"").dusk-1;
+               setClock(System.currentTimeMillis() / 1000 - currentHour*60);
+               System.out.println(line);
+            }
          }
       }
       

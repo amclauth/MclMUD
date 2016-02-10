@@ -55,7 +55,7 @@ public class MumeTriggers implements AIInterface
    @Override
    public void trigger(String line)
    {
-      if (line.equals("MUME: Multi Users in Middle-earth, version VIII."))
+      if (line.equals("MUME: Multi Users in Middle-earth, version VIII.") || line.equals("Reconnecting."))
       {
          MudFrame.getInstance().writeCommand(";change xml on;change height 60;sl");
          mumeAI.startConnected();

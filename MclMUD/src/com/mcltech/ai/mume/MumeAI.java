@@ -391,7 +391,7 @@ public class MumeAI implements AIInterface
                currentRoom.setName(out.substring(startIdx,roomEnd).trim());
             }
          }
-         else if (substr.equals("<exits>"))
+         else if (substr.equals("<exits>") && currentRoom != null)
          {
             int exitEnd = out.indexOf('<',startIdx);
             if (exitEnd == -1)
