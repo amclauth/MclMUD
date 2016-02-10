@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
 
 import com.mcltech.ai.AIInterface;
@@ -23,6 +24,15 @@ public class MumeFormatter implements AIInterface
       if (line.startsWith("Exits: "))
       {
          MumeFormatter.formatExits(line, ranges);
+      }
+      else if (line.contains("seems to have recovered"))
+      {
+         StyleRange r = new StyleRange();
+         r.start = line.indexOf("seems to have recovered")+3;
+         r.length = line.indexOf("senses.") + 7 - r.start;
+         r.underline = true;
+         r.fontStyle = SWT.ITALIC;
+         ranges.add(r);
       }
       return line;
    }

@@ -147,6 +147,146 @@ public class MumeInfoPanel implements AIInterface
             }
          }
       }
+      else if (line.contains("<prompt>") && line.contains("</prompt>"))
+      {
+         hpPromptMatch(line.trim());
+      }
+   }
+   
+   private void hpPromptMatch(String line)
+   {
+      int hpIdx = line.indexOf("HP:");
+      int manaIdx = line.indexOf("Mana:");
+      int moveIdx = line.indexOf("Move:");
+      
+      int old_hp_high = hp_high;
+      int old_hp_low = hp_low;
+      if (hpIdx >= 0)
+      {
+         String substr = line.substring(hpIdx+3);
+         if (substr.startsWith("Fine"))
+         {
+            hp_high = (int)(hp_max*0.99);
+            hp_low = (int)(hp_max*0.71);
+         }
+         else if (substr.startsWith("Hurt"))
+         {
+            hp_high = (int)(hp_max*0.70);
+            hp_low = (int)(hp_max*0.46);
+         }
+         else if (substr.startsWith("Wounded"))
+         {
+            hp_high = (int)(hp_max*0.45);
+            hp_low = (int)(hp_max*0.26);
+         }
+         else if (substr.startsWith("Bad"))
+         {
+            hp_high = (int)(hp_max*0.25);
+            hp_low = (int)(hp_max*0.11);
+         }
+         else if (substr.startsWith("Awful"))
+         {
+            hp_high = (int)(hp_max*0.10);
+            hp_low = (int)(hp_max*0.01);
+         }
+         else if (substr.startsWith("Dying"))
+         {
+            hp_high = 0;
+            hp_low = 0;
+         }
+      }
+      else
+      {
+         hp_high = hp_max;
+         hp_low = hp_max;
+      }
+      
+      int old_mana_high = mana_high;
+      int old_mana_low = mana_low;
+      if (manaIdx >= 0)
+      {
+         String substr = line.substring(manaIdx+5);
+         if (substr.startsWith("Burning"))
+         {
+            mana_high = (int)(mana_max*0.99);
+            mana_low = (int)(mana_max*0.76);
+         }
+         else if (substr.startsWith("Hot"))
+         {
+            mana_high = (int)(mana_max*0.75);
+            mana_low = (int)(mana_max*0.46);
+         }
+         else if (substr.startsWith("Warm"))
+         {
+            mana_high = (int)(mana_max*0.45);
+            mana_low = (int)(mana_max*0.26);
+         }
+         else if (substr.startsWith("Cold"))
+         {
+            mana_high = (int)(mana_max*0.25);
+            mana_low = (int)(mana_max*0.11);
+         }
+         else if (substr.startsWith("Icy"))
+         {
+            mana_high = (int)(mana_max*0.10);
+            mana_low = (int)(mana_max*0.01);
+         }
+         else if (substr.startsWith("Frozen"))
+         {
+            mana_high = 0;
+            mana_low = 0;
+         }
+      }
+      else
+      {
+         mana_high = mana_max;
+         mana_low = mana_max;
+      }
+      
+      int old_mv_high = mv_high;
+      int old_mv_low = mv_low;
+      if (moveIdx >= 0)
+      {
+         String substr = line.substring(moveIdx+5);
+         if (substr.startsWith("Tired"))
+         {
+            mv_high = (int)(mv_max*0.37);
+            mv_low = (int)(mv_max*0.22);
+         }
+         else if (substr.startsWith("Slow"))
+         {
+            mv_high = (int)(mv_max*0.21);
+            mv_low = (int)(mv_max*0.11);
+         }
+         else if (substr.startsWith("Weak"))
+         {
+            mv_high = (int)(mv_max*0.10);
+            mv_low = (int)(mv_max*0.03);
+         }
+         else if (substr.startsWith("Fainting"))
+         {
+            mv_high = (int)(mv_max*0.02);
+            mv_low = (int)(mv_max*0.01);
+         }
+         else if (substr.startsWith("Exhausted"))
+         {
+            mv_high = 0;
+            mv_low = 0;
+         }
+      }
+      else
+      {
+         mv_high = mv_max;
+         mv_low = (int)(mv_max*.38);
+      }
+      
+
+      if (hp_high != old_hp_high || hp_low != old_hp_low ||
+          mv_high != old_mv_high || mv_low != old_mv_low ||
+          mana_high != old_mana_high || mana_low != old_mana_low)
+      {
+         doHpMpManaRedraw();
+      }
    }
    
    private void scoreStatMatch(Matcher m)
@@ -214,7 +354,10 @@ public class MumeInfoPanel implements AIInterface
                {
                   r.start += len;
                }
-               roomInfoText.setStyleRanges(ranges.toArray(new StyleRange[0]));
+               for (StyleRange r : ranges)
+               {
+                  roomInfoText.setStyleRange(r);
+               }
             }
          });
       }

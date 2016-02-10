@@ -388,7 +388,7 @@ public class MudFrame
                // repeats the last command, but you can type over it.
                inputText.selectAll();
 
-               if (commandStack.size() > 0 && !input.equals(commandStack.get(commandStack.size() - 1)))
+               if (commandStack.size() == 0 || !input.equals(commandStack.get(commandStack.size() - 1)))
                {
                   commandStack.add(input);
                   while (commandStack.size() > COMMAND_STACK_SIZE)

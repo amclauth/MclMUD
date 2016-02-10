@@ -91,6 +91,9 @@ public class MumeAI implements AIInterface
       tags.put("<hit>","");
       tags.put("<damage>","");
       tags.put("<weather>","");
+      tags.put("<avoid_damage>", "");
+      tags.put("<miss>", "");
+      tags.put("<header>", "");
       tags.put("<highlight type=avoid_damage>", "");
       tags.put("<highlight type=damage>", "");
       tags.put("<highlight type=emote>", "");
@@ -136,6 +139,9 @@ public class MumeAI implements AIInterface
       tags.put("</damage>","");
       tags.put("</weather>","");
       tags.put("</highlight>", "");
+      tags.put("</avoid_damage>", "");
+      tags.put("</miss>", "");
+      tags.put("</header>", "");
       
       escapes = new HashMap<>();
       escapes.put("&lt;", "<");
@@ -380,7 +386,8 @@ public class MumeAI implements AIInterface
          }
          if (substr.equals("<room><name>"))
          {
-            currentRoom = new MumeRoom();
+            if (line.startsWith("<movement dir") || currentRoom == null)
+               currentRoom = new MumeRoom();
             int roomEnd = out.indexOf('<',startIdx);
             if (roomEnd == -1)
             {
@@ -456,12 +463,16 @@ public class MumeAI implements AIInterface
          String replacement = escapes.get(substr);
          if (replacement != null)
          {
-            out = out.substring(0,startIdx) + out.substring(endIdx+1);
+            out = out.substring(0,startIdx) + replacement + out.substring(endIdx+1);
             for (StyleRange range : ranges)
             {
                if (range.start > startIdx)
                {
-                  range.start -= (endIdx - startIdx) + 1;
+                  range.start -= (endIdx - startIdx) + 1 + replacement.length();
+               }
+               else if (range.start + range.length > startIdx)
+               {
+                  range.length -= (endIdx - startIdx) + 1 + replacement.length();
                }
             }
          }
