@@ -31,6 +31,17 @@ public class AnsiParser
    static final byte carriage = (byte) 0x0D;
    static final byte bell = (byte) 0x07;
    
+   static final byte zero = (byte) 0x30;
+   static final byte one = (byte) 0x31;
+   static final byte two = (byte) 0x32;
+   static final byte three = (byte) 0x33;
+   static final byte four = (byte) 0x34;
+   static final byte five = (byte) 0x35;
+   static final byte six = (byte) 0x36;
+   static final byte seven = (byte) 0x37;
+   static final byte eight = (byte) 0x38;
+   static final byte nine = (byte) 0x39;
+   
    boolean inEscape;
    boolean inControl;
    boolean isCarriage;
@@ -223,7 +234,7 @@ public class AnsiParser
    private void flushLineBuffer()
    {
 
-      String out = processString(lineBuffer, ranges);
+      String out = terminateStyleRanges(lineBuffer, ranges);
       if (out != null)
          mudFrame.writeToTextBox(out, ranges);
       // reset the line buffer and the ranges. We have the option to continue with
@@ -233,12 +244,16 @@ public class AnsiParser
       lineBuffer = "";
       lbIdx = 0;
       ranges.clear();
+      inEscape = false;
+      sequence = 0;
+      inControl = false;
+      isCarriage = false;
    }
 
    /**
     * Take the linebuffer and print it, with styles, to the output text
     */
-   static String processString(String line, List<StyleRange> currentRanges)
+   static String terminateStyleRanges(String line, List<StyleRange> currentRanges)
    {
       // send the string to the listeners
       String out = mudFrame.getListener().processOutput(line, currentRanges);
@@ -250,7 +265,7 @@ public class AnsiParser
          // change the length of each range that hasn't been terminated
          for (StyleRange r : currentRanges)
          {
-            if (r.length == -1)
+            if (r.length == -1 || r.length + r.start > out.length())
             {
                r.length = out.length() - r.start - 1;
             }
@@ -325,7 +340,7 @@ public class AnsiParser
             return; // do nothing
       }
       
-      if (last == null)
+      if (last == null || !last.equals(range))
          ranges.add(range);
    }
 
@@ -339,25 +354,25 @@ public class AnsiParser
    {
       switch (b)
       {
-         case (byte) 0x30:
+         case zero:
             return 0;
-         case (byte) 0x31:
+         case one:
             return 1;
-         case (byte) 0x32:
+         case two:
             return 2;
-         case (byte) 0x33:
+         case three:
             return 3;
-         case (byte) 0x34:
+         case four:
             return 4;
-         case (byte) 0x35:
+         case five:
             return 5;
-         case (byte) 0x36:
+         case six:
             return 6;
-         case (byte) 0x37:
+         case seven:
             return 7;
-         case (byte) 0x38:
+         case eight:
             return 8;
-         case (byte) 0x39:
+         case nine:
             return 9;
          default:
             return -1;
