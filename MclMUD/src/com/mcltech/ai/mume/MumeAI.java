@@ -36,6 +36,10 @@ public class MumeAI implements AIInterface
    int silent_who_countdown = 0;
    private Map<String,String> tags;
    private Map<String,String> escapes;
+   
+   private boolean isConnectedXML = false;
+   private String unfinishedLine = "";
+   private int previousRangeCount = 0;
 
    public MumeAI(MudFrame frame)
    {
@@ -158,6 +162,7 @@ public class MumeAI implements AIInterface
          friendTimer = new Timer();
          friendTimer.scheduleAtFixedRate(new FriendTimer(), 0, 60*1000);
       }
+      isConnectedXML = true;
    }
    
    @Override
@@ -178,6 +183,7 @@ public class MumeAI implements AIInterface
       {
          service.stop();
       }
+      isConnectedXML = false;
    }
 
    @Override
@@ -186,7 +192,23 @@ public class MumeAI implements AIInterface
       if (line == null || line.isEmpty())
          return line;
       
-      String out = line;
+      String out = unfinishedLine + line;
+      if (unfinishedLine.length() > 0)
+      {
+         for (int ii = previousRangeCount; ii < ranges.size(); ii++)
+         {
+            ranges.get(ii).start += unfinishedLine.length();
+         }
+      }
+      
+      if (isConnectedXML && !line.endsWith("\n") && !line.endsWith("</prompt>"))
+      {
+         unfinishedLine = out;
+         previousRangeCount = ranges.size();
+         return null;
+      }
+      unfinishedLine = "";
+      previousRangeCount = 0;
       
       if (silent_who_countdown == -1 && out.trim().endsWith("<header>Players</header>"))
       {

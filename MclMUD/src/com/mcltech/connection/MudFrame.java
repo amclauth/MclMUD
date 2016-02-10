@@ -210,7 +210,20 @@ public class MudFrame
    {
       List<StyleRange> rangeCopy = new ArrayList<>();
       if (ranges != null)
-         rangeCopy.addAll(ranges);
+      {
+         for (StyleRange r : ranges)
+         {
+            // deep "copy" of the few fields we care about
+            StyleRange range = new StyleRange();
+            range.start = r.start;
+            range.length = r.length;
+            range.background = r.background;
+            range.foreground = r.foreground;
+            range.fontStyle = r.fontStyle;
+            range.underline = r.underline;
+            rangeCopy.add(range);
+         }
+      }
 
       if (display.isDisposed())
          return;

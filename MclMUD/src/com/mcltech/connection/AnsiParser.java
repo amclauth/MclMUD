@@ -237,14 +237,30 @@ public class AnsiParser
 
       String out = terminateStyleRanges(lineBuffer, ranges);
       if (out != null)
+      {
          mudFrame.writeToTextBox(out, ranges);
+         List<StyleRange> continuedStyles = new ArrayList<>();
+         int len = lineBuffer.length();
+         for (StyleRange r : ranges)
+         {
+            if (r.length >= 0 && r.start + r.length <= len)
+            {
+               continue;
+            }
+            
+            r.start = 0;
+            continuedStyles.add(r);
+         }
+         ranges = continuedStyles;
+      }
       // reset the line buffer and the ranges. We have the option to continue with
       // the "continuedSequnces" here, but I'm currently opting to end all sequences
       // with line termination (there are times where an escape sequence is missed,
       // and then the entire screen ends up staying a color we don't want)
+      
+      
       lineBuffer = "";
       lbIdx = 0;
-      ranges.clear();
    }
 
    /**
