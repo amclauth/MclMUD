@@ -1,7 +1,5 @@
 package com.mcltech.connection;
 
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -206,7 +204,7 @@ public class AnsiParserTest
    {
       AnsiParser parser = AnsiParser.getInstance();
       parser.flush();
-      List<StyleRange> ranges = new ArrayList<StyleRange>();
+      List<StyleRange> ranges = new ArrayList<>();
 
       // verify that flush resets line and ranges and lbIdx
       parser.lineBuffer = "Hi there.";
@@ -221,7 +219,6 @@ public class AnsiParserTest
       
    }
 
-   @SuppressWarnings("static-method")
    @Test
    public void testParseBytes()
    {
