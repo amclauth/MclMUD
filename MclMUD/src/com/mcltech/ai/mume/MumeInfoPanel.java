@@ -1,5 +1,6 @@
 package com.mcltech.ai.mume;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -29,7 +30,9 @@ public class MumeInfoPanel implements AIInterface
    private int fontSize;
    Shell shell;
    Display display;
-   StyledText infoText;
+   StyledText roomInfoText;
+   StyledText timeText;
+   
    Color RED;
    Color DARK_RED;
    Color BLUE;
@@ -39,9 +42,13 @@ public class MumeInfoPanel implements AIInterface
    Color GRAY;
    Color BLACK;
    
+   boolean isShown = false;
+   
    int hp_low, hp_high, hp_max, hp_wimpy;
    int mv_low, mv_high, mv_max;
    int mana_low, mana_high, mana_max;
+   
+   Canvas hpMpManaCanvas;
    
    // singleton class holder pattern
    private static final class holder
@@ -53,7 +60,6 @@ public class MumeInfoPanel implements AIInterface
    {
       return holder.INSTANCE;
    }
-   
    
    //TODO
    // day / night / time / time till next
@@ -76,30 +82,109 @@ public class MumeInfoPanel implements AIInterface
       mana_low = 30;
       mana_high = 80;
    }
+   
+   public boolean isShown()
+   {
+      return isShown;
+   }
 
    @Override
    public void trigger(String line)
    {
+      if (line.contains("</room>"))
+      {
+         updateRoomText();
+      }
    }
    
-   private void createBars()
+   public void updateRoomText()
    {
-      Canvas canvas = new Canvas(shell, SWT.NO_REDRAW_RESIZE);
+      if (roomInfoText != null)
+      {
+         display.asyncExec(new Runnable()
+         {
+            List<StyleRange> ranges = new ArrayList<>();
+            
+            @Override
+            public void run()
+            {
+               ranges.clear();
+               roomInfoText.setText(MumeAI.currentRoom.getName() + "\n" + MumeAI.currentRoom.getExitsString());
+               MumeFormatter.formatExits(MumeAI.currentRoom.getExitsString(), ranges);
+               int len = MumeAI.currentRoom.getName().length() + 1;
+               for (StyleRange r : ranges)
+               {
+                  r.start += len;
+               }
+               roomInfoText.setStyleRanges(ranges.toArray(new StyleRange[0]));
+            }
+         });
+      }
+   }
+   
+   public void updateTime(String time, String dayNight, String changeTime, String till, String dawnDusk)
+   {
+      if (timeText != null)
+      {
+         display.asyncExec(new Runnable()
+         {
+            StyleRange[] ranges = new StyleRange[2];
+            
+            @Override
+            public void run()
+            {
+               ranges[0] = new StyleRange();
+               ranges[1] = new StyleRange();
+               ranges[0].underline = true;
+               ranges[1].underline = true;
+               
+               //  DAY          DUSK
+               //  10:54    19:00 (10:06)    
+               StringBuilder text = new StringBuilder();
+               text.append("  ");
+               ranges[0].start = 2;
+               if (dayNight.length() == 3)
+               {
+                  ranges[0].start = 3;
+                  text.append(" ");
+               }
+               ranges[0].length = dayNight.length();
+               text.append(dayNight);
+               while (text.length() < 15)
+                  text.append(" ");
+               text.append(dawnDusk);
+               text.append("\n  ");
+               text.append(time);
+               text.append("    ");
+               text.append(changeTime + " (" + till + ")");
+               timeText.setText(text.toString());
+               ranges[1].start = 15;
+               ranges[1].length = dawnDusk.length();
+               ranges[1].underline = true;
+               timeText.setStyleRanges(ranges);
+            }
+         });
+      }
+   }
+   
+   private void createHpMpManaBars()
+   {
+      hpMpManaCanvas = new Canvas(shell, SWT.NO_REDRAW_RESIZE);
       GridData gridData = new GridData();
       gridData.horizontalAlignment = GridData.FILL;
       gridData.grabExcessHorizontalSpace = true;
       gridData.grabExcessVerticalSpace = false;
       gridData.heightHint = 30;
 
-      canvas.setLayoutData(gridData);
+      hpMpManaCanvas.setLayoutData(gridData);
       
-      canvas.addPaintListener(new PaintListener()
+      hpMpManaCanvas.addPaintListener(new PaintListener()
       {
          @Override
          public void paintControl(PaintEvent e)
          {
-            int cHeight = canvas.getClientArea().height;
-            int cWidth = canvas.getClientArea().width;
+            int cHeight = hpMpManaCanvas.getClientArea().height;
+            int cWidth = hpMpManaCanvas.getClientArea().width;
             e.gc.setBackground(BLACK);
             e.gc.fillRectangle(0,0,cWidth,cHeight);
             e.gc.setForeground(GRAY);
@@ -133,19 +218,34 @@ public class MumeInfoPanel implements AIInterface
       
    }
    
-   private void createInfoBox()
+   private void createRoomInfoBox()
    {
       GridData gridData = new GridData();
       gridData.horizontalAlignment = GridData.FILL;
       gridData.grabExcessHorizontalSpace = true;
       gridData.grabExcessVerticalSpace = true;
       gridData.verticalAlignment = GridData.FILL;
-      infoText = new StyledText(shell, SWT.MULTI | SWT.READ_ONLY | SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
-      infoText.setLayoutData(gridData);
+      roomInfoText = new StyledText(shell, SWT.MULTI | SWT.READ_ONLY | SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
+      roomInfoText.setLayoutData(gridData);
       Font mono = new Font(display, "Courier", 12, SWT.NONE);
-      infoText.setFont(mono);
-      infoText.setBackground(display.getSystemColor(SWT.COLOR_BLACK));
-      infoText.setForeground(display.getSystemColor(SWT.COLOR_WHITE));
+      roomInfoText.setFont(mono);
+      roomInfoText.setBackground(display.getSystemColor(SWT.COLOR_BLACK));
+      roomInfoText.setForeground(display.getSystemColor(SWT.COLOR_WHITE));
+   }
+   
+   private void createTimeBox()
+   {
+      GridData gridData = new GridData();
+      gridData.horizontalAlignment = GridData.FILL;
+      gridData.grabExcessHorizontalSpace = true;
+      gridData.grabExcessVerticalSpace = false;
+      gridData.heightHint = 30;
+      timeText = new StyledText(shell, SWT.MULTI | SWT.READ_ONLY | SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
+      timeText.setLayoutData(gridData);
+      Font mono = new Font(display, "Courier", 12, SWT.NONE);
+      timeText.setFont(mono);
+      timeText.setBackground(display.getSystemColor(SWT.COLOR_BLACK));
+      timeText.setForeground(display.getSystemColor(SWT.COLOR_WHITE));
    }
 
    @Override
@@ -197,9 +297,10 @@ public class MumeInfoPanel implements AIInterface
          log.add(Level.WARNING, "Couldn't get Configger values: ", e);
       }
 
-      createBars();
+      createHpMpManaBars();
       createTimers();
-      createInfoBox();
+      createTimeBox();
+      createRoomInfoBox();
       
       shell.setLocation(xloc, yloc);
       shell.setSize(width, height);
@@ -227,6 +328,7 @@ public class MumeInfoPanel implements AIInterface
       });
 
       shell.open();
+      isShown = true;
 
       shell.addListener(SWT.Close, new Listener()
       {
@@ -237,6 +339,7 @@ public class MumeInfoPanel implements AIInterface
             stop();
             log.stop();
             shell.dispose();
+            isShown = false;
          }
       });
    }

@@ -271,39 +271,55 @@ public class MumeTime implements AIInterface
                month = (month+1)%12;
             }
             
-            if (month >= 0 && day >= 0)
+            if (month >= 0 && day >= 0 && MumeInfoPanel.getInstance().isShown())
             {
                calendarMonth cMonth = monthMap.get(month + "");
                if (hour < cMonth.dawn)
                {
                   int tillDawn = cMonth.dawn*60 - hour*60 - minute;
-                  frame.updateTitle(String.format("%02d:%02d NIGHT %02d:%02d", 
-                        Integer.valueOf(hour), Integer.valueOf(minute),
-                        Integer.valueOf(tillDawn / 60), Integer.valueOf(tillDawn % 60)
-                        ));
+                  MumeInfoPanel.getInstance().updateTime(
+                        String.format("%02d:%02d", Integer.valueOf(hour), Integer.valueOf(minute)),
+                        "NIGHT",
+                        String.format("%02d:00", Integer.valueOf(cMonth.dawn)),
+                        String.format("%02d:%02d", Integer.valueOf(tillDawn / 60), Integer.valueOf(tillDawn % 60)),
+                        "DAWN"
+                        );
                }
                else if (hour < cMonth.dusk)
                {
                   int tillDusk = cMonth.dusk*60 - hour*60 - minute;
-                  frame.updateTitle(String.format("%02d:%02d DAY %02d:%02d", 
-                        Integer.valueOf(hour), Integer.valueOf(minute),
-                        Integer.valueOf(tillDusk / 60), Integer.valueOf(tillDusk % 60)
-                        ));
+                  MumeInfoPanel.getInstance().updateTime(
+                        String.format("%02d:%02d", Integer.valueOf(hour), Integer.valueOf(minute)),
+                        "DAY",
+                        String.format("%02d:00", Integer.valueOf(cMonth.dusk)),
+                        String.format("%02d:%02d", Integer.valueOf(tillDusk / 60), Integer.valueOf(tillDusk % 60)),
+                        "DUSK"
+                        );
                }
                else
                {
                   if (day == 29)
                      cMonth = monthMap.get(((month+1)%12) + "");
                   int tillDawn = cMonth.dawn*60 + 24*60 - hour*60 - minute;
-                  frame.updateTitle(String.format("%02d:%02d NIGHT %02d:%02d", 
-                        Integer.valueOf(hour), Integer.valueOf(minute),
-                        Integer.valueOf(tillDawn / 60), Integer.valueOf(tillDawn % 60)
-                        ));
+                  MumeInfoPanel.getInstance().updateTime(
+                        String.format("%02d:%02d", Integer.valueOf(hour), Integer.valueOf(minute)),
+                        "NIGHT",
+                        String.format("%02d:00", Integer.valueOf(cMonth.dawn)),
+                        String.format("%02d:%02d", Integer.valueOf(tillDawn / 60), Integer.valueOf(tillDawn % 60)),
+                        "DAWN"
+                        );
+                  
                }
             }
             else
             {
-               frame.updateTitle(String.format("%02d:%02d", Integer.valueOf(hour), Integer.valueOf(minute)));
+               MumeInfoPanel.getInstance().updateTime(
+                     String.format("%02d:%02d", Integer.valueOf(hour), Integer.valueOf(minute)),
+                     "NIGHT",
+                     "",
+                     "",
+                     ""
+                     );
             }
          }
       }, 0, 1000);

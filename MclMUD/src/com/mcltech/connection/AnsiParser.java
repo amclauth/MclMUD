@@ -11,9 +11,9 @@ import org.eclipse.swt.custom.StyleRange;
 import com.mcltech.base.MudLogger;
 
 /**
- * Parse the ansi input and escape sequences into string and style ranges. This is
- * not a thread safe class, but the input is serialized by the controller's read, so
- * should be quite safe for this application.
+ * Parse the ansi input and escape sequences into string and style ranges. This is not a thread safe class,
+ * but the input is serialized by the controller's read, so should be quite safe for this application.
+ * 
  * @author andymac
  * 
  */
@@ -30,7 +30,7 @@ public class AnsiParser
    static final byte formfeed = (byte) 0x0C;
    static final byte carriage = (byte) 0x0D;
    static final byte bell = (byte) 0x07;
-   
+
    static final byte zero = (byte) 0x30;
    static final byte one = (byte) 0x31;
    static final byte two = (byte) 0x32;
@@ -41,7 +41,7 @@ public class AnsiParser
    static final byte seven = (byte) 0x37;
    static final byte eight = (byte) 0x38;
    static final byte nine = (byte) 0x39;
-   
+
    boolean inEscape;
    boolean inControl;
    boolean isCarriage;
@@ -50,9 +50,9 @@ public class AnsiParser
 
    String lineBuffer;
    List<StyleRange> ranges;
-   
+
    private static MudFrame mudFrame;
-   
+
    // singleton class holder pattern
    private static final class holder
    {
@@ -63,8 +63,8 @@ public class AnsiParser
    {
       return holder.INSTANCE;
    }
-   
-   AnsiParser() 
+
+   AnsiParser()
    {
       if (mudFrame == null)
          mudFrame = MudFrame.getInstance();
@@ -76,7 +76,7 @@ public class AnsiParser
       lineBuffer = "";
       lbIdx = 0;
    }
-   
+
    public static void injectMudFrame(MudFrame frame)
    {
       mudFrame = frame;
@@ -92,13 +92,13 @@ public class AnsiParser
     */
    public void parseBytes(byte[] bytes, int len)
    {
-      synchronized(this) // synchronize the main operations that will change the lineBuffer
-                         // and style ranges internally / externally
+      synchronized (this) // synchronize the main operations that will change the lineBuffer
+                          // and style ranges internally / externally
       {
          byte[] out = new byte[bytes.length];
          int idx = 0;
          int startIdx = 0;
-   
+
          for (int ii = 0; ii < bytes.length && ii < len; ii++)
          {
             byte b = bytes[ii];
@@ -126,12 +126,12 @@ public class AnsiParser
                }
                catch (UnsupportedEncodingException e)
                {
-                  log.add(Level.SEVERE,"UnsupportedEncodingException: ", e);
+                  log.add(Level.SEVERE, "UnsupportedEncodingException: ", e);
                }
                flushLineBuffer();
                continue;
             }
-   
+
             if (inEscape)
             {
                // check for escape commands that we don't parse
@@ -140,8 +140,8 @@ public class AnsiParser
                   inEscape = false;
                   continue;
                }
-   
-               // otherwise  set the control bit
+
+               // otherwise set the control bit
                inEscape = false;
                inControl = true;
                sequence = 0;
@@ -160,13 +160,13 @@ public class AnsiParser
                   }
                   continue;
                }
-               
+
                // if we can't figure out this sequence, continue to ignore it.
                if (sequence < 0)
                {
                   continue;
                }
-               
+
                // get the next integer bit
                int n = convert(b);
                // ignore non integers because we're not parsing those currently
@@ -175,7 +175,8 @@ public class AnsiParser
                   sequence = -1;
                   try
                   {
-                     log.add(Level.INFO,"Ignoring sequence in this line: " + new String(bytes, 0, len, "cp1252"));
+                     log.add(Level.INFO,
+                           "Ignoring sequence in this line: " + new String(bytes, 0, len, "cp1252"));
                   }
                   catch (@SuppressWarnings("unused")
                   UnsupportedEncodingException e)
@@ -196,17 +197,17 @@ public class AnsiParser
                }
                else if (b == bell)
                {
-                  //TODO this won't work in a lot of systems ... might try flashing the screen instead.
+                  // TODO this won't work in a lot of systems ... might try flashing the screen instead.
                   java.awt.Toolkit.getDefaultToolkit().beep();
                   continue;
                }
-               
-               // or log it to the out bytes and set the index for the full string 
+
+               // or log it to the out bytes and set the index for the full string
                out[idx++] = b;
                lbIdx++;
             }
          }
-   
+
          // add to the lineBuffer when done parsing these bits
          try
          {
@@ -214,7 +215,7 @@ public class AnsiParser
          }
          catch (UnsupportedEncodingException e1)
          {
-            log.add(Level.SEVERE,"UnsupportedEncodingException: ", e1);
+            log.add(Level.SEVERE, "UnsupportedEncodingException: ", e1);
          }
       }
    }
@@ -224,13 +225,13 @@ public class AnsiParser
     */
    public void flush()
    {
-      synchronized(this) // synchronize the main operations that will change the lineBuffer
-                         // and style ranges internally / externally
+      synchronized (this) // synchronize the main operations that will change the lineBuffer
+                          // and style ranges internally / externally
       {
          flushLineBuffer();
       }
    }
-   
+
    private void flushLineBuffer()
    {
 
@@ -239,8 +240,18 @@ public class AnsiParser
          mudFrame.writeToTextBox(out, ranges);
       // reset the line buffer and the ranges. We have the option to continue with
       // the "continuedSequnces" here, but I'm currently opting to end all sequences
-      // with line termination (there are times where an escape sequence is missed, 
+      // with line termination (there are times where an escape sequence is missed,
       // and then the entire screen ends up staying a color we don't want)
+      lineBuffer = "";
+      lbIdx = 0;
+      ranges.clear();
+   }
+
+   /**
+    * Mostly for unit testing
+    */
+   public void reset()
+   {
       lineBuffer = "";
       lbIdx = 0;
       ranges.clear();
@@ -257,7 +268,7 @@ public class AnsiParser
    {
       // send the string to the listeners
       String out = mudFrame.getListener().processOutput(line, currentRanges);
-      
+
       // formatters could choose not to print this string by sending null back
       // process style ranges if they exist and can be applied
       if (out != null && out.length() > 0 && currentRanges.size() != 0)
@@ -303,7 +314,7 @@ public class AnsiParser
       }
 
       // Create the new style range for this sequence
-      StyleRange last = ranges.size() > 0 ? ranges.get(ranges.size()-1) : null;
+      StyleRange last = ranges.size() > 0 ? ranges.get(ranges.size() - 1) : null;
       StyleRange range = last != null && last.start == idx ? last : new StyleRange();
       range.start = idx; // relative to the string, not the bytes or the screen
       range.length = -1;
@@ -339,7 +350,7 @@ public class AnsiParser
          default:
             return; // do nothing
       }
-      
+
       if (last == null || !last.equals(range))
          ranges.add(range);
    }

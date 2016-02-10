@@ -22,60 +22,67 @@ public class MumeFormatter implements AIInterface
       // color the exits
       if (line.startsWith("Exits: "))
       {
-         Matcher m = null;
-         int start = -1;
-         if (MumeAI.currentRoom != null && MumeAI.currentRoom.getReturnDirPattern() != null)
-         {
-            m = MumeAI.currentRoom.getReturnDirPattern().matcher(line);
-            
-            if (m.find())
-            {
-               StyleRange r = new StyleRange();
-               r.start = m.start();
-               start = m.start();
-               r.length = m.end() - m.start();
-               r.foreground = MudFrame.getInstance().getColor(3);
-               ranges.add(r);
-            }
-         }
-         m = pathPattern.matcher(line);
-         while (m.find())
-         {
-            if (m.start() != start && m.start() != start+1)
-            {
-               StyleRange r = new StyleRange();
-               r.start = m.start();
-               r.length = m.end() - m.start();
-               r.foreground = MudFrame.getInstance().getColor(8);
-               ranges.add(r);
-            }
-         }
-         m = waterPattern.matcher(line);
-         while (m.find())
-         {
-            if (m.start() != start && m.start() != start+1)
-            {
-               StyleRange r = new StyleRange();
-               r.start = m.start();
-               r.length = m.end() - m.start();
-               r.foreground = MudFrame.getInstance().getColor(6);
-               ranges.add(r);
-            }
-         }
-         m = roadPattern.matcher(line);
-         while (m.find())
-         {
-            if (m.start() != start && m.start() != start+1)
-            {
-               StyleRange r = new StyleRange();
-               r.start = m.start();
-               r.length = m.end() - m.start();
-               r.foreground = MudFrame.getInstance().getColor(2);
-               ranges.add(r);
-            }
-         }
+         MumeFormatter.formatExits(line, ranges);
       }
       return line;
+   }
+   
+   public static void formatExits(String line, List<StyleRange> ranges)
+   {
+      if (line == null)
+         return;
+      Matcher m = null;
+      int start = -1;
+      if (MumeAI.currentRoom != null && MumeAI.currentRoom.getReturnDirPattern() != null)
+      {
+         m = MumeAI.currentRoom.getReturnDirPattern().matcher(line);
+         
+         if (m.find())
+         {
+            StyleRange r = new StyleRange();
+            r.start = m.start();
+            start = m.start();
+            r.length = m.end() - m.start();
+            r.foreground = MudFrame.getInstance().getColor(3);
+            ranges.add(r);
+         }
+      }
+      m = pathPattern.matcher(line);
+      while (m.find())
+      {
+         if (m.start() != start && m.start() != start+1)
+         {
+            StyleRange r = new StyleRange();
+            r.start = m.start();
+            r.length = m.end() - m.start();
+            r.foreground = MudFrame.getInstance().getColor(8);
+            ranges.add(r);
+         }
+      }
+      m = waterPattern.matcher(line);
+      while (m.find())
+      {
+         if (m.start() != start && m.start() != start+1)
+         {
+            StyleRange r = new StyleRange();
+            r.start = m.start();
+            r.length = m.end() - m.start();
+            r.foreground = MudFrame.getInstance().getColor(6);
+            ranges.add(r);
+         }
+      }
+      m = roadPattern.matcher(line);
+      while (m.find())
+      {
+         if (m.start() != start && m.start() != start+1)
+         {
+            StyleRange r = new StyleRange();
+            r.start = m.start();
+            r.length = m.end() - m.start();
+            r.foreground = MudFrame.getInstance().getColor(2);
+            ranges.add(r);
+         }
+      }
    }
 
    @Override

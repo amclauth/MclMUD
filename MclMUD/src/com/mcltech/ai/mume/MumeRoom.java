@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 public class MumeRoom
 {
    private String name;
+   private String exitsString;
    private char lastDirection;
    private Boolean northExit;
    private Boolean southExit;
@@ -22,6 +23,7 @@ public class MumeRoom
    public void addExits(String exitString)
    {
 //      System.out.println("Exit String: " + exitString);
+      exitsString = exitString;
    }
    
    public MumeRoom copy()
@@ -36,6 +38,11 @@ public class MumeRoom
       newRoom.upExit = upExit;
       newRoom.downExit = downExit;
       return newRoom;
+   }
+   
+   public String getExitsString()
+   {
+      return exitsString;
    }
 
    public String getName()

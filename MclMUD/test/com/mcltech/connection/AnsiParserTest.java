@@ -203,16 +203,16 @@ public class AnsiParserTest
    public void testFlush()
    {
       AnsiParser parser = AnsiParser.getInstance();
-      parser.flush();
+      parser.reset();
       List<StyleRange> ranges = new ArrayList<>();
 
-      // verify that flush resets line and ranges and lbIdx
+      // verify that reset resets line and ranges and lbIdx
       parser.lineBuffer = "Hi there.";
       parser.lbIdx = 9;
       parser.ranges = new ArrayList<>();
       ranges.add(new StyleRange());
       
-      parser.flush();
+      parser.reset();
       Assert.assertEquals("",parser.lineBuffer);
       Assert.assertEquals(0,parser.lbIdx);
       Assert.assertEquals(0, parser.ranges.size());
@@ -223,7 +223,7 @@ public class AnsiParserTest
    public void testParseBytes()
    {
       AnsiParser parser = AnsiParser.getInstance();
-      parser.flush();
+      parser.reset();
       
       byte[] bytes = new byte[20];
       bytes[0] = AnsiParser.zero;
@@ -246,7 +246,7 @@ public class AnsiParserTest
       Assert.assertFalse(parser.inEscape);
       Assert.assertFalse(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
       
       // pass in a string with a terminal in the middle, verify linebuffer has only 
       // the next string
@@ -259,7 +259,7 @@ public class AnsiParserTest
       Assert.assertFalse(parser.inEscape);
       Assert.assertFalse(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
       
       bytes[5] = AnsiParser.newline;
       parser.parseBytes(bytes, 10);
@@ -270,7 +270,7 @@ public class AnsiParserTest
       Assert.assertFalse(parser.inEscape);
       Assert.assertFalse(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
       
       bytes[5] = AnsiParser.formfeed;
       parser.parseBytes(bytes, 10);
@@ -281,7 +281,7 @@ public class AnsiParserTest
       Assert.assertFalse(parser.inEscape);
       Assert.assertFalse(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
 
       // escape sequence partial enters into isEscape with no change to lineBuffer
       bytes[5] = AnsiParser.five;
@@ -294,7 +294,7 @@ public class AnsiParserTest
       Assert.assertTrue(parser.inEscape);
       Assert.assertFalse(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
 
       // add a sequence, verify sequence
       bytes[11] = AnsiParser.one;
@@ -306,7 +306,7 @@ public class AnsiParserTest
       Assert.assertFalse(parser.inEscape);
       Assert.assertFalse(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
       
       bytes[11] = AnsiParser.ctr;
       parser.parseBytes(bytes, 12);
@@ -317,7 +317,7 @@ public class AnsiParserTest
       Assert.assertFalse(parser.inEscape);
       Assert.assertTrue(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
       
       bytes[12] = AnsiParser.one;
       parser.parseBytes(bytes, 13);
@@ -328,7 +328,7 @@ public class AnsiParserTest
       Assert.assertFalse(parser.inEscape);
       Assert.assertTrue(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
       
       bytes[13] = AnsiParser.end;
       parser.parseBytes(bytes, 14);
@@ -342,7 +342,7 @@ public class AnsiParserTest
       Assert.assertFalse(parser.inEscape);
       Assert.assertFalse(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
       
       bytes[13] = AnsiParser.sep1;
       bytes[14] = AnsiParser.four;
@@ -363,7 +363,7 @@ public class AnsiParserTest
       Assert.assertFalse(parser.inEscape);
       Assert.assertFalse(parser.inControl);
       Assert.assertFalse(parser.isCarriage);
-      parser.flush();
+      parser.reset();
    }
 
 }

@@ -90,6 +90,21 @@ public class MudFrame
       if (shell == null)
          shell = new Shell(display);
       
+      if (colors == null)
+      {
+         colors = new Color[9];
+         // set up the system colors
+         colors[0] = display.getSystemColor(SWT.COLOR_BLACK);
+         colors[1] = display.getSystemColor(SWT.COLOR_RED);
+         colors[2] = display.getSystemColor(SWT.COLOR_GREEN);
+         colors[3] = display.getSystemColor(SWT.COLOR_YELLOW);
+         colors[4] = display.getSystemColor(SWT.COLOR_BLUE);
+         colors[5] = display.getSystemColor(SWT.COLOR_MAGENTA);
+         colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
+         colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
+         colors[8] = display.getSystemColor(SWT.COLOR_DARK_GREEN);
+      }
+      
       try {
          int newFontSize = Integer.valueOf(Configger.getProperty("FONTSIZE", "12")).intValue();
          if (newFontSize != fontSize)
@@ -224,24 +239,6 @@ public class MudFrame
                if (offset < outputText.getCharCount() && offset > 0)
                   outputText.replaceTextRange(0, offset, "");
             }
-         }
-      });
-   }
-
-   public void updateTitle(String title)
-   {
-      if (display.isDisposed())
-         return;
-
-      display.asyncExec(new Runnable()
-      {
-         @Override
-         public void run()
-         {
-            if (title == null || title.trim().length() == 0)
-               shell.setText("MclMUD Client");
-            else
-               shell.setText("MclMUD Client " + title.trim());
          }
       });
    }
@@ -603,21 +600,6 @@ public class MudFrame
     */
    public Color getColor(int idx)
    {
-      if (colors == null)
-      {
-         colors = new Color[9];
-         // set up the system colors
-         colors[0] = display.getSystemColor(SWT.COLOR_BLACK);
-         colors[1] = display.getSystemColor(SWT.COLOR_RED);
-         colors[2] = display.getSystemColor(SWT.COLOR_GREEN);
-         colors[3] = display.getSystemColor(SWT.COLOR_YELLOW);
-         colors[4] = display.getSystemColor(SWT.COLOR_BLUE);
-         colors[5] = display.getSystemColor(SWT.COLOR_MAGENTA);
-         colors[6] = display.getSystemColor(SWT.COLOR_CYAN);
-         colors[7] = display.getSystemColor(SWT.COLOR_WHITE);
-         colors[8] = display.getSystemColor(SWT.COLOR_DARK_GREEN);
-      }
-      
       return colors[idx];
    }
 }

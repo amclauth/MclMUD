@@ -403,6 +403,8 @@ public class MumeAI implements AIInterface
                currentRoom.addExits(out.substring(startIdx,exitEnd).trim());
             }
          }
+         // enemies
+         // multi line exits
          
          if (replacement == null)
          {
