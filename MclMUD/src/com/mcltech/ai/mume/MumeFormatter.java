@@ -16,6 +16,7 @@ public class MumeFormatter implements AIInterface
    private static final Pattern pathPattern = Pattern.compile("-\\w+-");
    private static final Pattern roadPattern = Pattern.compile("=\\w+=");
    private static final Pattern waterPattern = Pattern.compile("~\\w+~");
+   private static final Pattern cliffPattern = Pattern.compile("~\\\\\\w+\\/~");
    
    @Override
    public String format(String line, List<StyleRange> ranges)
@@ -28,10 +29,18 @@ public class MumeFormatter implements AIInterface
       else if (line.contains("seems to have recovered"))
       {
          StyleRange r = new StyleRange();
-         r.start = line.indexOf("seems to have recovered")+3;
+         r.start = line.indexOf("seems to have recovered");
          r.length = line.indexOf("senses.") + 7 - r.start;
          r.underline = true;
          r.fontStyle = SWT.ITALIC;
+         ranges.add(r);
+      }
+      else if (line.equals("You gain a level!"))
+      {
+         StyleRange r = new StyleRange();
+         r.start = 0;
+         r.length = line.length();
+         r.background = MudFrame.getInstance().getColor(8);
          ranges.add(r);
       }
       return line;

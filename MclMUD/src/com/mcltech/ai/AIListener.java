@@ -34,7 +34,7 @@ public class AIListener implements Runnable
    protected LinkedBlockingQueue<String> lineQueue;
    protected boolean listening = false;
    private String name;
-   private Map<String, String[]> aliases;
+   protected Map<String, String[]> aliases;
    private Thread poller;
    private AIInterface ai;
    private TreeMap<String, AIInterface> AIMap = new TreeMap<>(new DescendingWordLengthComparator());
@@ -53,6 +53,8 @@ public class AIListener implements Runnable
       poller = new Thread(this);
       poller.start();
    }
+   
+   protected AIListener() {}
 
    /**
     * Deregister the listener (so it can be swapped)
@@ -95,6 +97,15 @@ public class AIListener implements Runnable
          // clear alias
          aliases.remove(alias);
          return true;
+      }
+      
+      if (aliasString.contains(" "))
+      {
+         log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString
+               + "} alias cannot contain spaces.");
+         MudFrame.getInstance().writeToTextBox("Alias is improperly formatted. {" + aliasString
+               + "} alias cannot contain spaces.\n", null);
+         return false;
       }
       
       String[] commands = aliasString.substring(idx + 1).split(";");
@@ -233,7 +244,7 @@ public class AIListener implements Runnable
       }
    }
    
-   private List<String> expandAlias(String command)
+   protected List<String> expandAlias(String command)
    {
       String[] words = command.split("\\s+");
       String[] aliasedCommands = aliases.get(words[0]);

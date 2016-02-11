@@ -201,7 +201,7 @@ public class MumeAI implements AIInterface
          }
       }
       
-      if (isConnectedXML && !line.endsWith("\n") && !line.endsWith("</prompt>"))
+      if (isConnectedXML && !line.endsWith("\n") && !line.endsWith("</prompt>") && !line.endsWith(" *** "))
       {
          unfinishedLine = out;
          previousRangeCount = ranges.size();
