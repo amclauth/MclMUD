@@ -99,7 +99,7 @@ public class AIListener implements Runnable
          return true;
       }
       
-      if (aliasString.contains(" "))
+      if (alias.contains(" "))
       {
          log.add(Level.WARNING, "Alias is improperly formatted. {" + aliasString
                + "} alias cannot contain spaces.");
@@ -286,7 +286,7 @@ public class AIListener implements Runnable
     */
    public String processOutput(String line, List<StyleRange> ranges)
    {
-      String out = line.trim();
+      String out = line;
       // TODO remove this when we're comfortable with the formatted output only
       log.add(Level.INFO, line);
       if (ai.isFormatter())

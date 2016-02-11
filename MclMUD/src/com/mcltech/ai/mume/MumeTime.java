@@ -350,7 +350,6 @@ public class MumeTime implements AIInterface
             {
                int currentHour = monthMap.get(Integer.valueOf(month)+"").dawn+1;
                setClock(System.currentTimeMillis() / 1000 - currentHour*60);
-               System.out.println(line);
             }
          }
          else if (line.contains("The night has begun."))
@@ -359,7 +358,6 @@ public class MumeTime implements AIInterface
             {
                int currentHour = monthMap.get(Integer.valueOf(month)+"").dusk;
                setClock(System.currentTimeMillis() / 1000 - currentHour*60);
-               System.out.println(line);
             }
          }
          else if (line.contains("The sun rises") || line.contains("sunrise"))
@@ -368,7 +366,6 @@ public class MumeTime implements AIInterface
             {
                int currentHour = monthMap.get(Integer.valueOf(month)+"").dawn;
                setClock(System.currentTimeMillis() / 1000 - currentHour*60);
-               System.out.println(line);
             }
          }
          else if (line.contains("sunset") || line.contains("the sun sets"))
@@ -377,7 +374,6 @@ public class MumeTime implements AIInterface
             {
                int currentHour = monthMap.get(Integer.valueOf(month)+"").dusk-1;
                setClock(System.currentTimeMillis() / 1000 - currentHour*60);
-               System.out.println(line);
             }
          }
       }

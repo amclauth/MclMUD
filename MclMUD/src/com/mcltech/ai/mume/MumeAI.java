@@ -30,6 +30,7 @@ public class MumeAI implements AIInterface
    private List<AIInterface> formatters;
    private List<String> friendList;
    private List<String> onlineFriends;
+   private List<String> currentlyOnline;
    
    private Timer friendTimer;
    
@@ -98,6 +99,7 @@ public class MumeAI implements AIInterface
       tags.put("<avoid_damage>", "");
       tags.put("<miss>", "");
       tags.put("<header>", "");
+      tags.put("<social>", "");
       tags.put("<highlight type=avoid_damage>", "");
       tags.put("<highlight type=damage>", "");
       tags.put("<highlight type=emote>", "");
@@ -146,6 +148,7 @@ public class MumeAI implements AIInterface
       tags.put("</avoid_damage>", "");
       tags.put("</miss>", "");
       tags.put("</header>", "");
+      tags.put("</social>", "");
       
       escapes = new HashMap<>();
       escapes.put("&lt;", "<");
@@ -213,6 +216,7 @@ public class MumeAI implements AIInterface
       if (silent_who_countdown == -1 && out.trim().endsWith("<header>Players</header>"))
       {
          silent_who_countdown = 1;
+         currentlyOnline = new ArrayList<>();
          return null;
       }
       
@@ -221,22 +225,22 @@ public class MumeAI implements AIInterface
          if (out.startsWith("<prompt>"))
          {
             silent_who_countdown = 0;
+            onlineFriends = currentlyOnline;
             return null;
          }
          
          if (out.length() < 7)
             return null;
          
-         List<String> currentlyOnline = new ArrayList<>();
          for (String friend : friendList)
          {
             if (out.length() < 6+friend.length())
                continue;
             String comp = out.substring(6, 6+friend.length());
-            if (comp.toLowerCase().equals(friend))
+            if (comp.toLowerCase().equals(friend.toLowerCase()))
             {
-               currentlyOnline.add(friend);
-               if (onlineFriends.contains(friend))
+               currentlyOnline.add(friend.toLowerCase());
+               if (onlineFriends.contains(friend.toLowerCase()))
                {
                   continue;
                }
@@ -252,7 +256,6 @@ public class MumeAI implements AIInterface
                MudFrame.getInstance().writeToTextBox(friendOnline, rangeList);
             }
          }
-         onlineFriends = currentlyOnline;
          return null;
       }
 

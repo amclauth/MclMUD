@@ -57,7 +57,7 @@ public class MumeTriggers implements AIInterface
    {
       if (line.equals("MUME: Multi Users in Middle-earth, version VIII.") || line.equals("Reconnecting."))
       {
-         MudFrame.getInstance().writeCommand(";change xml on;change height 60;sl");
+         MudFrame.getInstance().writeCommand(";change xml on;change height 60;snuff lantern");
       }
       else if (line.equals("<xml>XML mode is now on."))
       {
