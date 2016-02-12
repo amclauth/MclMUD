@@ -26,6 +26,8 @@ import com.mcltech.connection.MudFrame;
 public class MumeTime implements AIInterface
 {
    private static MudLogger log = MudLogger.getInstance();
+   private boolean running = false;
+   
    MudFrame frame;
    
    Timer clockTimer;
@@ -86,6 +88,7 @@ public class MumeTime implements AIInterface
    {
       setClock();
       setCalendar();
+      running = true;
    }
    
    @Override
@@ -93,6 +96,13 @@ public class MumeTime implements AIInterface
    {
       if (clockTimer != null)
          clockTimer.cancel();
+      running = false;
+   }
+   
+   @Override
+   public boolean isRunning()
+   {
+      return running;
    }
    
    void setCalendar(String line)

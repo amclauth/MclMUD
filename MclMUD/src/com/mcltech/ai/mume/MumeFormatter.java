@@ -18,6 +18,8 @@ public class MumeFormatter implements AIInterface
    private static final Pattern waterPattern = Pattern.compile("~\\w+~");
    private static final Pattern cliffPattern = Pattern.compile("~\\\\\\w+\\/~");
    
+   private boolean running = false;
+   
    @Override
    public String format(String line, List<StyleRange> ranges)
    {
@@ -107,15 +109,21 @@ public class MumeFormatter implements AIInterface
    @Override
    public void start()
    {
-      
+      running = true;
    }
 
    @Override
    public void stop()
    {
-      
+      running = false;
    }
 
+   @Override
+   public boolean isRunning()
+   {
+      return running;
+   }
+   
    @Override
    public boolean isFormatter()
    {

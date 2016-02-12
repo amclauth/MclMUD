@@ -16,6 +16,7 @@ public interface AIInterface extends ServiceInterface
    public boolean isFormatter();
    public boolean isTriggerer();
    public boolean isCommander();
+   public boolean isRunning();
    /**
     * Format the output line. Return null if it shouldn't be printed.
     * @param line

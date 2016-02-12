@@ -35,6 +35,8 @@ public class AIListener implements Runnable
    protected boolean listening = false;
    private String name;
    protected Map<String, String[]> aliases;
+   protected Map<String, String> triggers;
+   private Map<String,Serializer> serializers;
    private Thread poller;
    private AIInterface ai;
    private TreeMap<String, AIInterface> AIMap = new TreeMap<>(new DescendingWordLengthComparator());
@@ -47,9 +49,13 @@ public class AIListener implements Runnable
       AIMap.put("m.u.m.e.", new MumeAI(frame));
 
       lineQueue = new LinkedBlockingQueue<>();
+      serializers = new HashMap<>();
       ai = new BasicAI();
       this.name = name;
       loadAliases();
+      loadTriggers();
+      loadSerializers();
+//      loadSerials();
       poller = new Thread(this);
       poller.start();
    }
@@ -172,6 +178,7 @@ public class AIListener implements Runnable
       File aliasFile = new File("config/" + name.toLowerCase() + ".alias");
       if (!aliasFile.exists())
       {
+         MudFrame.getInstance().writeToTextBox("No alias file {" + aliasFile.getAbsolutePath() + "}\n", null);
          return;
       }
 
@@ -202,7 +209,127 @@ public class AIListener implements Runnable
       catch (IOException e)
       {
          log.add(Level.SEVERE, "Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", e);
-         MudFrame.getInstance().writeToTextBox("Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}", null);
+         MudFrame.getInstance().writeToTextBox("Couldn't read alias file {" + aliasFile.getAbsolutePath() + "}\n", null);
+      }
+   }
+   
+   /**
+    * Load trigger file into triggers
+    */
+   private void loadTriggers()
+   {
+      if (name == null || name.isEmpty())
+         return;
+
+      triggers = new HashMap<>();
+      File triggerFile = new File("config/" + name.toLowerCase() + ".trigger");
+      if (!triggerFile.exists())
+      {
+         MudFrame.getInstance().writeToTextBox("No trigger file {" + triggerFile.getAbsolutePath() + "}\n", null);
+         return;
+      }
+      
+      int count = 0;
+      String trigger = null;
+      try (BufferedReader br = new BufferedReader(new FileReader(triggerFile)))
+      {
+         for (String line; (line = br.readLine()) != null;)
+         {
+            if (line.trim().isEmpty())
+               continue;
+            if (count % 2 == 0)
+            {
+               trigger = line;
+            }
+            else
+            {
+               triggers.put(trigger, line);
+               System.out.println(trigger + " => " + line);
+            }
+            count++;
+         }
+         br.close();
+      }
+      catch (@SuppressWarnings("unused")
+      FileNotFoundException e)
+      {
+         // of course it's found, we just checked that it exists. Do nothing just in case.
+      }
+      catch (IOException e)
+      {
+         log.add(Level.SEVERE, "Couldn't read trigger file {" + triggerFile.getAbsolutePath() + "}", e);
+         MudFrame.getInstance().writeToTextBox("Couldn't read trigger file {" + triggerFile.getAbsolutePath() + "}\n", null);
+      }
+   }
+   
+   /**
+    * Load trigger file into triggers
+    */
+   private void loadSerializers()
+   {
+      if (name == null || name.isEmpty())
+         return;
+
+      File serialFile = new File("config/" + name.toLowerCase() + ".serial");
+      if (!serialFile.exists())
+      {
+         MudFrame.getInstance().writeToTextBox("No serials file {" + serialFile.getAbsolutePath() + "}\n", null);
+         return;
+      }
+      
+      Serializer serializer = null;
+      boolean readSerials = false;
+      boolean readActions = false;
+      try (BufferedReader br = new BufferedReader(new FileReader(serialFile)))
+      {
+         for (String line; (line = br.readLine()) != null;)
+         {
+            if (line.trim().isEmpty())
+            {
+               if (readSerials)
+               {
+                  readSerials = false;
+                  readActions = true;
+               }
+               else if (readActions)
+               {
+                  readActions = false;
+               }
+               continue;
+            }
+            if (line.startsWith("Name: ") && line.length() > 6)
+            {
+               serializer = new Serializer(line.substring(6).trim());
+               readSerials = true;
+               readActions = false;
+               continue;
+            }
+            int idx = line.indexOf(" => ");
+            if (idx > 0 && line.trim().length() > idx + 4 && serializer != null)
+            {
+               String trigger = line.substring(0, idx);
+               String action = line.substring(idx+4);
+               if (readSerials)
+               {
+                  serializer.serialMap.put(trigger, action);
+               }
+               else if (readActions)
+               {
+                  serializer.actionMap.put(trigger, action);
+               }
+            }
+         }
+         br.close();
+      }
+      catch (@SuppressWarnings("unused")
+      FileNotFoundException e)
+      {
+         // of course it's found, we just checked that it exists. Do nothing just in case.
+      }
+      catch (IOException e)
+      {
+         log.add(Level.SEVERE, "Couldn't read serial file {" + serialFile.getAbsolutePath() + "}", e);
+         MudFrame.getInstance().writeToTextBox("Couldn't read serial file {" + serialFile.getAbsolutePath() + "}\n", null);
       }
    }
    
@@ -231,6 +358,31 @@ public class AIListener implements Runnable
             line = lineQueue.poll(250, TimeUnit.MILLISECONDS);
             if (listening)
             {
+               if (line != null && !line.isEmpty())
+               {
+                  for (String key : triggers.keySet())
+                  {
+                     if (key.startsWith("###") && key.endsWith("###"))
+                     {
+                        String trigger = key.substring(3, key.length() - 3);
+                        if (line.equals(trigger))
+                        {
+                           MudFrame.getInstance().writeCommand(triggers.get(key));
+                        }
+                     }
+                     else
+                     {
+                        if (line.contains(key))
+                        {
+                           MudFrame.getInstance().writeCommand(triggers.get(key));
+                        }
+                     }
+                  }
+               }
+               for (String serializerName : serializers.keySet())
+               {
+                  serializers.get(serializerName).trigger(line);
+               }
                if (ai.isTriggerer())
                   ai.trigger(line);
             }
@@ -336,7 +488,48 @@ public class AIListener implements Runnable
       }
       else if (input.startsWith("#loadAI ") && input.trim().length() > 8)
       {
-         swapAI(input.trim().substring(8));
+         swapAI(input.trim().substring(8).toLowerCase());
+         return null;
+      }
+      else if (input.startsWith("#"))
+      {
+         if (input.trim().length() == 1)
+         {
+            StringBuilder buf = new StringBuilder();
+            buf.append("\n\nAvailable AI's: (\"loadAI <name>\")\n");
+            String[] keys = AIMap.keySet().toArray(new String[0]);
+            Arrays.sort(keys);
+            for (String key : keys)
+            {
+               buf.append("  " + key + "\n");
+            }
+            buf.append("\nAvailable Serializers: (\"#<name>\")\n");
+            keys = serializers.keySet().toArray(new String[0]);
+            Arrays.sort(keys);
+            for (String key : keys)
+            {
+               buf.append("  " + key + "\n");
+            }
+            buf.append("\n");
+            MudFrame.getInstance().writeToTextBox(buf.toString(), null);
+         }
+         else
+         {
+            String s = input.trim().substring(1);
+            Serializer serializer = serializers.get(s);
+            if (serializer!= null)
+            {
+               if (serializer.isRunning())
+               {
+                  serializer.start();
+               }
+               else
+               {
+                  serializer.stop();
+               }
+            }
+         }
+
          return null;
       }
       
@@ -378,9 +571,12 @@ public class AIListener implements Runnable
       {
          ai = newAI;
          name = aiName;
+         serializers = new HashMap<>();
          MudFrame.getInstance().writeToTextBox("Now using AI: " + name, null);
          ai.start();
          loadAliases();
+         loadTriggers();
+         loadSerializers();
          return true;
       }
 

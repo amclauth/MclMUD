@@ -41,6 +41,7 @@ public class MumeAI implements AIInterface
    private boolean isConnectedXML = false;
    private String unfinishedLine = "";
    private int previousRangeCount = 0;
+   private boolean running = false;
 
    public MumeAI(MudFrame frame)
    {
@@ -175,6 +176,7 @@ public class MumeAI implements AIInterface
       {
          service.start();
       }
+      running = true;
    }
    
    @Override
@@ -187,6 +189,13 @@ public class MumeAI implements AIInterface
          service.stop();
       }
       isConnectedXML = false;
+      running = false;
+   }
+   
+   @Override
+   public boolean isRunning()
+   {
+      return running;
    }
 
    @Override

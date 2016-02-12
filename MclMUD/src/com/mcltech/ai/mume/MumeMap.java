@@ -10,6 +10,7 @@ import com.mcltech.ai.AIInterface;
 public class MumeMap implements AIInterface
 {
    private Map<String,MumeRoom> roomNameMap;
+   private boolean running = false;
    
    public MumeMap()
    {
@@ -19,15 +20,21 @@ public class MumeMap implements AIInterface
    @Override
    public void start()
    {
-      
+      running = true;
    }
 
    @Override
    public void stop()
    {
-      
+      running = false;
    }
 
+   @Override
+   public boolean isRunning()
+   {
+      return running;
+   }
+   
    @Override
    public boolean isFormatter()
    {

@@ -5,11 +5,11 @@ import java.util.List;
 import org.eclipse.swt.custom.StyleRange;
 
 import com.mcltech.ai.AIInterface;
-import com.mcltech.connection.MudFrame;
 
 public class MumeTriggers implements AIInterface
 {
    private MumeAI mumeAI;
+   private boolean running = false;
    
    public MumeTriggers(MumeAI mumeAI)
    {
@@ -19,13 +19,19 @@ public class MumeTriggers implements AIInterface
    @Override
    public void start()
    {
-      
+      running = true;
    }
 
    @Override
    public void stop()
    {
-      
+      running = false;
+   }
+   
+   @Override
+   public boolean isRunning()
+   {
+      return running;
    }
 
    @Override
@@ -55,17 +61,9 @@ public class MumeTriggers implements AIInterface
    @Override
    public void trigger(String line)
    {
-      if (line.equals("MUME: Multi Users in Middle-earth, version VIII.") || line.equals("Reconnecting."))
-      {
-         MudFrame.getInstance().writeCommand(";change xml on;change height 60;snuff lantern");
-      }
-      else if (line.equals("<xml>XML mode is now on."))
+      if (line.equals("<xml>XML mode is now on."))
       {
          mumeAI.startConnected();
-      }
-      else if (line.equals("ZBLAM"))
-      {
-         // stand;ride
       }
    }
 

@@ -29,6 +29,7 @@ import com.mcltech.connection.MudFrame;
 public class MumeInfoPanel implements AIInterface
 {
    static final MudLogger log = MudLogger.getInstance();
+   private boolean running = false;
    private int fontSize;
    Shell shell;
    Display display;
@@ -51,12 +52,12 @@ public class MumeInfoPanel implements AIInterface
 
    boolean isShown = false;
 
-   int hp_low, hp_high, hp_max, hp_wimpy;
-   int mv_low, mv_high, mv_max;
-   int mana_low, mana_high, mana_max;
+   int hp_low, hp_high, hp_max, hp_wimpy, hp_curr;
+   int mv_low, mv_high, mv_max, mv_curr;
+   int mana_low, mana_high, mana_max, mana_curr;
 
    Canvas hpMpManaCanvas;
-   
+
    private Matcher matcher;
 
    // singleton class holder pattern
@@ -70,14 +71,27 @@ public class MumeInfoPanel implements AIInterface
       return holder.INSTANCE;
    }
 
-   // TODO
-   // day / night / time / time till next
-   // xp / tp
-   // text above bars with numbers for hp / tp / mv / mana / xp / etc
-   // room name
-   // room exits
-   // room enemies
-   // turn all of these things into singletons like MudLogger
+   public double getHp()
+   {
+      if (hp_curr == -1)
+         return hp_low * 1.0 / hp_max;
+      return hp_curr * 1.0 / hp_max;
+   }
+   
+   public double getMv()
+   {
+      if (mv_curr == -1)
+         return mv_low * 1.0 / mv_max;
+      return mv_curr * 1.0 / mv_max;
+   }
+   
+   public double getMana()
+   {
+      if (mana_curr == -1)
+         return mana_low * 1.0 / mana_max;
+      return mana_curr * 1.0 / mana_max;
+   }
+
    public MumeInfoPanel()
    {
       hp_max = 100;
@@ -86,10 +100,13 @@ public class MumeInfoPanel implements AIInterface
       hp_low = 50;
       hp_high = 70;
       hp_wimpy = 30;
+      hp_curr = -1;
       mv_low = 40;
       mv_high = 60;
+      mv_curr = -1;
       mana_low = 30;
       mana_high = 80;
+      mana_curr = -1;
    }
 
    public boolean isShown()
@@ -116,17 +133,18 @@ public class MumeInfoPanel implements AIInterface
       else if (line.contains("You will flee if your hit points go below <status>"))
       {
          int idx1 = line.indexOf("You will flee if your hit points go below <status>");
-         int idx2 = line.indexOf("</status>",idx1+50);
+         int idx2 = line.indexOf("</status>", idx1 + 50);
          if (idx2 > idx1)
          {
-            try {
-               hp_wimpy = Integer.valueOf(line.substring(idx1+50,idx2)).intValue();
+            try
+            {
+               hp_wimpy = Integer.valueOf(line.substring(idx1 + 50, idx2)).intValue();
                doHpMpManaRedraw();
             }
-            catch (@SuppressWarnings("unused") NumberFormatException e)
+            catch (@SuppressWarnings("unused")
+            NumberFormatException e)
             {
-               log.add(Level.WARNING,
-                     "Couldn't convert " + line + " to wimpy value.");
+               log.add(Level.WARNING, "Couldn't convert " + line + " to wimpy value.");
             }
          }
       }
@@ -136,14 +154,15 @@ public class MumeInfoPanel implements AIInterface
          int idx2 = line.trim().length();
          if (idx2 > idx1)
          {
-            try {
-               hp_wimpy = Integer.valueOf(line.substring(idx1+14,idx2)).intValue();
+            try
+            {
+               hp_wimpy = Integer.valueOf(line.substring(idx1 + 14, idx2)).intValue();
                doHpMpManaRedraw();
             }
-            catch (@SuppressWarnings("unused") NumberFormatException e)
+            catch (@SuppressWarnings("unused")
+            NumberFormatException e)
             {
-               log.add(Level.WARNING,
-                     "Couldn't convert " + line + " to wimpy value.");
+               log.add(Level.WARNING, "Couldn't convert " + line + " to wimpy value.");
             }
          }
       }
@@ -152,42 +171,42 @@ public class MumeInfoPanel implements AIInterface
          hpPromptMatch(line.trim());
       }
    }
-   
+
    private void hpPromptMatch(String line)
    {
       int hpIdx = line.indexOf("HP:");
       int manaIdx = line.indexOf("Mana:");
       int moveIdx = line.indexOf("Move:");
-      
+
       int old_hp_high = hp_high;
       int old_hp_low = hp_low;
       if (hpIdx >= 0)
       {
-         String substr = line.substring(hpIdx+3);
+         String substr = line.substring(hpIdx + 3);
          if (substr.startsWith("Fine"))
          {
-            hp_high = (int)(hp_max*0.99);
-            hp_low = (int)(hp_max*0.71);
+            hp_high = (int) (hp_max * 0.99);
+            hp_low = (int) (hp_max * 0.71);
          }
          else if (substr.startsWith("Hurt"))
          {
-            hp_high = (int)(hp_max*0.70);
-            hp_low = (int)(hp_max*0.46);
+            hp_high = (int) (hp_max * 0.70);
+            hp_low = (int) (hp_max * 0.46);
          }
          else if (substr.startsWith("Wounded"))
          {
-            hp_high = (int)(hp_max*0.45);
-            hp_low = (int)(hp_max*0.26);
+            hp_high = (int) (hp_max * 0.45);
+            hp_low = (int) (hp_max * 0.26);
          }
          else if (substr.startsWith("Bad"))
          {
-            hp_high = (int)(hp_max*0.25);
-            hp_low = (int)(hp_max*0.11);
+            hp_high = (int) (hp_max * 0.25);
+            hp_low = (int) (hp_max * 0.11);
          }
          else if (substr.startsWith("Awful"))
          {
-            hp_high = (int)(hp_max*0.10);
-            hp_low = (int)(hp_max*0.01);
+            hp_high = (int) (hp_max * 0.10);
+            hp_low = (int) (hp_max * 0.01);
          }
          else if (substr.startsWith("Dying"))
          {
@@ -199,37 +218,38 @@ public class MumeInfoPanel implements AIInterface
       {
          hp_high = hp_max;
          hp_low = hp_max;
+         hp_curr = hp_max;
       }
-      
+
       int old_mana_high = mana_high;
       int old_mana_low = mana_low;
       if (manaIdx >= 0)
       {
-         String substr = line.substring(manaIdx+5);
+         String substr = line.substring(manaIdx + 5);
          if (substr.startsWith("Burning"))
          {
-            mana_high = (int)(mana_max*0.99);
-            mana_low = (int)(mana_max*0.76);
+            mana_high = (int) (mana_max * 0.99);
+            mana_low = (int) (mana_max * 0.76);
          }
          else if (substr.startsWith("Hot"))
          {
-            mana_high = (int)(mana_max*0.75);
-            mana_low = (int)(mana_max*0.46);
+            mana_high = (int) (mana_max * 0.75);
+            mana_low = (int) (mana_max * 0.46);
          }
          else if (substr.startsWith("Warm"))
          {
-            mana_high = (int)(mana_max*0.45);
-            mana_low = (int)(mana_max*0.26);
+            mana_high = (int) (mana_max * 0.45);
+            mana_low = (int) (mana_max * 0.26);
          }
          else if (substr.startsWith("Cold"))
          {
-            mana_high = (int)(mana_max*0.25);
-            mana_low = (int)(mana_max*0.11);
+            mana_high = (int) (mana_max * 0.25);
+            mana_low = (int) (mana_max * 0.11);
          }
          else if (substr.startsWith("Icy"))
          {
-            mana_high = (int)(mana_max*0.10);
-            mana_low = (int)(mana_max*0.01);
+            mana_high = (int) (mana_max * 0.10);
+            mana_low = (int) (mana_max * 0.01);
          }
          else if (substr.startsWith("Frozen"))
          {
@@ -241,32 +261,33 @@ public class MumeInfoPanel implements AIInterface
       {
          mana_high = mana_max;
          mana_low = mana_max;
+         mana_curr = mana_max;
       }
-      
+
       int old_mv_high = mv_high;
       int old_mv_low = mv_low;
       if (moveIdx >= 0)
       {
-         String substr = line.substring(moveIdx+5);
+         String substr = line.substring(moveIdx + 5);
          if (substr.startsWith("Tired"))
          {
-            mv_high = (int)(mv_max*0.37);
-            mv_low = (int)(mv_max*0.22);
+            mv_high = (int) (mv_max * 0.37);
+            mv_low = (int) (mv_max * 0.22);
          }
          else if (substr.startsWith("Slow"))
          {
-            mv_high = (int)(mv_max*0.21);
-            mv_low = (int)(mv_max*0.11);
+            mv_high = (int) (mv_max * 0.21);
+            mv_low = (int) (mv_max * 0.11);
          }
          else if (substr.startsWith("Weak"))
          {
-            mv_high = (int)(mv_max*0.10);
-            mv_low = (int)(mv_max*0.03);
+            mv_high = (int) (mv_max * 0.10);
+            mv_low = (int) (mv_max * 0.03);
          }
          else if (substr.startsWith("Fainting"))
          {
-            mv_high = (int)(mv_max*0.02);
-            mv_low = (int)(mv_max*0.01);
+            mv_high = (int) (mv_max * 0.02);
+            mv_low = (int) (mv_max * 0.01);
          }
          else if (substr.startsWith("Exhausted"))
          {
@@ -277,38 +298,43 @@ public class MumeInfoPanel implements AIInterface
       else
       {
          mv_high = mv_max;
-         mv_low = (int)(mv_max*.38);
+         mv_low = (int) (mv_max * .38);
       }
-      
 
-      if (hp_high != old_hp_high || hp_low != old_hp_low ||
-          mv_high != old_mv_high || mv_low != old_mv_low ||
-          mana_high != old_mana_high || mana_low != old_mana_low)
+      if (hp_high != old_hp_high || hp_low != old_hp_low)
       {
+         hp_curr = -1;
+         doHpMpManaRedraw();
+      }
+      else if (mv_high != old_mv_high || mv_low != old_mv_low)
+      {
+         mv_curr = -1;
+         doHpMpManaRedraw();
+      }
+      else if (mana_high != old_mana_high || mana_low != old_mana_low)
+      {
+         mana_curr = -1;
          doHpMpManaRedraw();
       }
    }
-   
+
    private void scoreStatMatch(Matcher m)
    {
       try
       {
          int val = Integer.valueOf(m.group(1)).intValue();
          int max = Integer.valueOf(m.group(2)).intValue();
-         hp_low = val;
-         hp_high = val;
+         hp_curr = val;
          hp_max = max;
 
          val = Integer.valueOf(m.group(3)).intValue();
          max = Integer.valueOf(m.group(4)).intValue();
-         mana_low = val;
-         mana_high = val;
+         mana_curr = val;
          mana_max = max;
 
          val = Integer.valueOf(m.group(5)).intValue();
          max = Integer.valueOf(m.group(6)).intValue();
-         mv_low = val;
-         mv_high = val;
+         mv_curr = val;
          mv_max = max;
 
          doHpMpManaRedraw();
@@ -316,11 +342,10 @@ public class MumeInfoPanel implements AIInterface
       catch (@SuppressWarnings("unused")
       NumberFormatException e)
       {
-         log.add(Level.WARNING,
-               "Couldn't convert " + m.group(0) + " to numbers.");
+         log.add(Level.WARNING, "Couldn't convert " + m.group(0) + " to numbers.");
       }
    }
-   
+
    private void doHpMpManaRedraw()
    {
       display.asyncExec(new Runnable()
@@ -437,6 +462,11 @@ public class MumeInfoPanel implements AIInterface
             e.gc.drawLine((int) (1.0 * hp_wimpy / hp_max * cWidth), 0,
                   (int) (1.0 * hp_wimpy / hp_max * cWidth), cHeight / 3 - 1);
             e.gc.drawRectangle(0, 0, (int) (1.0 * hp_high / hp_max * cWidth), cHeight / 3 - 1);
+            if (hp_curr > 0)
+            {
+               e.gc.setBackground(BLACK);
+               e.gc.fillRectangle((int) (1.0 * hp_curr / hp_max * cWidth - 1), 0, 2, cHeight / 3 - 1);
+            }
 
             e.gc.setBackground(DARK_GREEN);
             e.gc.fillRectangle(0, cHeight / 3, (int) (1.0 * mv_high / mv_max * cWidth), cHeight / 3 - 1);
@@ -444,6 +474,12 @@ public class MumeInfoPanel implements AIInterface
             e.gc.fillRectangle(0, cHeight / 3, (int) (1.0 * mv_low / mv_max * cWidth), cHeight / 3 - 1);
             e.gc.drawRectangle(0, cHeight / 3, (int) (1.0 * mv_low / mv_max * cWidth), cHeight / 3 - 1);
             e.gc.drawRectangle(0, cHeight / 3, (int) (1.0 * mv_high / mv_max * cWidth), cHeight / 3 - 1);
+            if (mv_curr > 0)
+            {
+               e.gc.setBackground(BLACK);
+               e.gc.fillRectangle((int) (1.0 * mv_curr / mv_max * cWidth - 1), cHeight / 3, 2,
+                     cHeight / 3 - 1);
+            }
 
             e.gc.setBackground(DARK_BLUE);
             e.gc.fillRectangle(0, 2 * cHeight / 3, (int) (1.0 * mana_high / mana_max * cWidth),
@@ -455,6 +491,12 @@ public class MumeInfoPanel implements AIInterface
                   cHeight / 3 - 1);
             e.gc.drawRectangle(0, 2 * cHeight / 3, (int) (1.0 * mana_high / mana_max * cWidth),
                   cHeight / 3 - 1);
+            if (mana_curr > 0)
+            {
+               e.gc.setBackground(BLACK);
+               e.gc.fillRectangle((int) (1.0 * mana_curr / mana_max * cWidth - 1), 2 * cHeight / 3, 2,
+                     cHeight / 3 - 1);
+            }
          }
       });
    }
@@ -585,17 +627,24 @@ public class MumeInfoPanel implements AIInterface
          {
             System.out.println("Child Shell handling Close event, about to dispose this Shell");
             stop();
-            log.stop();
             shell.dispose();
             isShown = false;
          }
       });
+      
+      running = true;
    }
 
    @Override
    public void stop()
    {
-
+      running = false;
+   }
+   
+   @Override
+   public boolean isRunning()
+   {
+      return running;
    }
 
    @Override
